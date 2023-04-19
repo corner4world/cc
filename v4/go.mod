@@ -3,7 +3,7 @@ module modernc.org/cc/v4
 go 1.17
 
 require (
-	github.com/dustin/go-humanize v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/pmezard/go-difflib v1.0.0
 	modernc.org/ccorpus2 v1.2.0
