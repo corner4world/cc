@@ -2237,7 +2237,7 @@ func TestIssue146(t *testing.T) {
 // https://gitlab.com/cznic/cc/-/issues/149
 func TestIssue149(t *testing.T) {
 	// https://gitlab.com/cznic/cc/-/issues/149#note_1376776631
-	const src = "#include <sys/types.h>\n"
+	const src = "#include_next <sys/types.h>\n"
 	if runtime.GOOS == "windows" {
 		return
 	}
