@@ -2233,3 +2233,30 @@ func TestIssue146(t *testing.T) {
 		}
 	}
 }
+
+// https://gitlab.com/cznic/cc/-/issues/149
+func TestIssue149(t *testing.T) {
+	// https://gitlab.com/cznic/cc/-/issues/149#note_1376776631
+	const src = "#include <sys/types.h>\n"
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Parse(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	t.Logf("\n%s", ast.TranslationUnit)
+}
