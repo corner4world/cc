@@ -1623,7 +1623,7 @@ func (c *cpp) includeNext(ln controlLine) {
 	var nm string
 	raw := c.includeArg(s)
 	if Dmesgs {
-		Dmesg("#inclue_next raw argument in 'raw' %q", raw)
+		Dmesg("#include_next raw argument in 'raw' %q", raw)
 	}
 	switch {
 	case strings.HasPrefix(raw, `"`) && strings.HasSuffix(raw, `"`):
@@ -1640,13 +1640,13 @@ func (c *cpp) includeNext(ln controlLine) {
 	dir, _ := filepath.Split(fn)
 	dir = filepath.Clean(dir)
 	if Dmesgs {
-		Dmesg("#inclue_next processed argument in 'nm' %q, current file 'dir' %q, 'fn' %q", nm, dir, fn)
+		Dmesg("#include_next processed argument in 'nm' %q, current file 'dir' %q, 'fn' %q", nm, dir, fn)
 	}
-	ok := false
+	ok := dir == "."
 	for _, v := range c.cfg.SysIncludePaths {
 		v = filepath.Clean(v)
 		if Dmesgs {
-			Dmesg("#inclue_next cleaned sysinclude path to try 'v' %q", v)
+			Dmesg("#include_next cleaned sysinclude path to try 'v' %q", v)
 		}
 		if !ok {
 			if dir == v {
@@ -1657,11 +1657,11 @@ func (c *cpp) includeNext(ln controlLine) {
 
 		pth := filepath.Join(v, nm)
 		if Dmesgs {
-			Dmesg("#inclue_next joined 'pth' %q", pth)
+			Dmesg("#include_next joined 'pth' %q", pth)
 		}
 		if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
 			if Dmesgs {
-				Dmesg("#inclue_next OK")
+				Dmesg("#include_next OK")
 			}
 			c.push(g)
 			return
@@ -1669,7 +1669,7 @@ func (c *cpp) includeNext(ln controlLine) {
 	}
 
 	if Dmesgs {
-		Dmesg("#inclue_next FAIL")
+		Dmesg("#include_next FAIL")
 	}
 	c.eh("%v: include file not found: %s", s[0].Position(), raw)
 	c.closed = true
