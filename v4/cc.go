@@ -40,9 +40,11 @@ import (
 	"modernc.org/opt"
 )
 
-const (
-	DmesgsFile = "/tmp/cc.log"
+var (
+	DmesgsFile string
+)
 
+const (
 	// Builtin definitions used by package tests. Possibly usable also by consumers
 	// of this package.
 	Builtin = `
@@ -324,6 +326,23 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 
 	includePaths = includePaths[:len(includePaths):len(includePaths)]
 	sysIncludePaths = sysIncludePaths[:len(sysIncludePaths):len(sysIncludePaths)]
+
+	if Dmesgs {
+		defer func() {
+			Dmesg(`NewConfig:
+	HostIncludePaths: %q
+	HostSysIncludePaths: %q
+	IncludePaths: %q
+	SysIncludePaths: %q
+`,
+				r.HostIncludePaths,
+				r.HostSysIncludePaths,
+				r.IncludePaths,
+				r.SysIncludePaths,
+			)
+		}()
+	}
+
 	return &Config{
 		ABI:                 abi,
 		CC:                  cc,

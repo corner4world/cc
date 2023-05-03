@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build cc.dmesg && !windows
-// +build cc.dmesg,!windows
+//go:build cc.dmesg
+// +build cc.dmesg
 
 package cc // import "modernc.org/cc/v4"
 
@@ -23,12 +23,22 @@ var (
 )
 
 func init() {
+	t := time.Now()
+	// 01/02 03:04:05PM '06 -0700
+	DmesgsFile = "ccv4-dmesg-" + t.Format("2006-01-02-03-150405")
+	DmesgsFile = filepath.Join(os.TempDir(), fmt.Sprintf("%s.%d", DmesgsFile, os.Getpid()))
+	if err := os.Mkdir(DmesgsFile, 0770); err != nil {
+		panic(err.Error())
+	}
+
+	fn := filepath.Join(DmesgsFile, "dmesg.log")
 	var err error
-	if logf, err = os.OpenFile(DmesgsFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_SYNC, 0644); err != nil {
+	if logf, err = os.OpenFile(fn, os.O_APPEND|os.O_CREATE|os.O_WRONLY|os.O_SYNC, 0644); err != nil {
 		panic(err.Error())
 	}
 
 	Dmesg("%v", time.Now())
+	fmt.Fprintf(os.Stderr, "debug messages in %s\n", fn)
 }
 
 // Dmesg synchronously appends a debug message to DmesgsFile. To disable do not
