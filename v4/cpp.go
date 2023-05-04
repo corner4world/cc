@@ -718,10 +718,12 @@ type cpp struct {
 	eof         eofLine
 	fset        *fset
 	groups      map[string]group
+	included    *included
 	indentLevel int // debug dumps
 	macros      map[string]*Macro
 	mmap        map[mmapKey]*Macro
 	mstack      map[string][]*Macro
+	source      Source
 	sources     []Source
 	stack       []interface{}
 	tok         Token
@@ -1458,6 +1460,9 @@ func (c *cpp) nextLine() (r textLine) {
 
 			c.tos = x[1:]
 			c.push(x[0])
+		case *included:
+			c.included = x
+			c.pop()
 		case controlLine:
 			// trc("%v: controlLine %v", x[0].Position(), toksDump(x))
 			c.pop()
@@ -1590,6 +1595,10 @@ func (c *cpp) elifGroup(eg elifGroup) bool {
 	return c.isNonZero(c.eval(ln[2:]))
 }
 
+type included struct {
+	using string
+}
+
 // includeNext executes an #include_next control-line: https://gcc.gnu.org/onlinedocs/cpp/Wrapper-Headers.html
 func (c *cpp) includeNext(ln controlLine) {
 	// eg. ["#" "include_next" "<stdio.h>" "\n"]
@@ -1636,25 +1645,26 @@ func (c *cpp) includeNext(ln controlLine) {
 		return
 	}
 
-	fn := ln[2].Position().Filename
-	dir, _ := filepath.Split(fn)
-	dir = filepath.Clean(dir)
-	if Dmesgs {
-		Dmesg("#include_next processed argument in 'nm' %q, current file 'dir' %q, 'fn' %q", nm, dir, fn)
+	searchPaths := c.cfg.SysIncludePaths
+	var using string
+	if c.included != nil {
+		for i, v := range searchPaths {
+			if c.included.using == v {
+				searchPaths = searchPaths[i+1:]
+				using = c.included.using
+				break
+			}
+		}
 	}
-	ok := dir == "."
-	for _, v := range c.cfg.SysIncludePaths {
+	fn := ln[2].Position().Filename
+	if Dmesgs {
+		Dmesg("#include_next processed argument in 'nm' %q, current file 'fn' %q, included 'using' %q", nm, fn, using)
+	}
+	for _, v := range searchPaths {
 		v = filepath.Clean(v)
 		if Dmesgs {
 			Dmesg("#include_next cleaned sysinclude path to try 'v' %q", v)
 		}
-		if !ok {
-			if dir == v {
-				ok = true
-			}
-			continue
-		}
-
 		pth := filepath.Join(v, nm)
 		if Dmesgs {
 			Dmesg("#include_next joined 'pth' %q", pth)
@@ -1663,6 +1673,8 @@ func (c *cpp) includeNext(ln controlLine) {
 			if Dmesgs {
 				Dmesg("#include_next OK")
 			}
+			c.push(c.included)
+			c.included = &included{using: v}
 			c.push(g)
 			return
 		}
@@ -1714,6 +1726,8 @@ func (c *cpp) include(ln controlLine) {
 			}
 			pth := filepath.Join(v, nm)
 			if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
+				c.push(c.included)
+				c.included = &included{using: v}
 				c.push(g)
 				return
 			}
@@ -1726,6 +1740,8 @@ func (c *cpp) include(ln controlLine) {
 		for _, v := range c.cfg.SysIncludePaths {
 			pth := filepath.Join(v, nm)
 			if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
+				c.push(c.included)
+				c.included = &included{using: v}
 				c.push(g)
 				return
 			}
