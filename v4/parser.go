@@ -3358,6 +3358,18 @@ func (p *parser) enumerator() (r *Enumerator) {
 		r = &Enumerator{Case: EnumeratorIdent, Token: p.must(rune(IDENTIFIER))}
 	case '=':
 		r = &Enumerator{Case: EnumeratorExpr, Token: p.must(rune(IDENTIFIER)), Token2: p.shift(false), ConstantExpression: p.constantExpression()}
+	case rune(ATTRIBUTE):
+		t := p.enumeratorConst()
+		switch p.rune(false) {
+		case '}', ',':
+			r = &Enumerator{Case: EnumeratorIdent, Token: t}
+		case '=':
+			r = &Enumerator{Case: EnumeratorExpr, Token: t, Token2: p.shift(false), ConstantExpression: p.constantExpression()}
+		default:
+			t := p.shift(false)
+			p.cpp.eh("%v: unexpected %v, expected enumerator", t.Position(), runeName(t.Ch))
+			return nil
+		}
 	default:
 		t := p.shift(false)
 		p.cpp.eh("%v: unexpected %v, expected enumerator", t.Position(), runeName(t.Ch))
@@ -3365,6 +3377,12 @@ func (p *parser) enumerator() (r *Enumerator) {
 	}
 	r.visible = visible(r.Token.seq + 1)
 	p.scope.declare(p.cpp.eh, r.Token.SrcStr(), r)
+	return r
+}
+
+func (p *parser) enumeratorConst() (r Token) {
+	r = p.must(rune(IDENTIFIER))
+	p.attributeSpecifierListOpt()
 	return r
 }
 
