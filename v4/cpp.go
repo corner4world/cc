@@ -1632,7 +1632,7 @@ func (c *cpp) includeNext(ln controlLine) {
 	var nm string
 	raw := c.includeArg(s)
 	if Dmesgs {
-		Dmesg("#include_next raw argument in 'raw' %q", raw)
+		Dmesg("#include_next raw argument in 'raw' %s", raw)
 	}
 	switch {
 	case strings.HasPrefix(raw, `"`) && strings.HasSuffix(raw, `"`):
@@ -1658,20 +1658,23 @@ func (c *cpp) includeNext(ln controlLine) {
 	}
 	fn := ln[2].Position().Filename
 	if Dmesgs {
-		Dmesg("#include_next processed argument in 'nm' %q, current file 'fn' %q, included 'using' %q", nm, fn, using)
+		Dmesg("#include_next processed argument in 'nm' %s, current file 'fn' %s, included 'using' %s", nm, fn, using)
+		if c.included != nil {
+			Dmesg("c.included.using: %s", c.included.using)
+		}
 	}
 	for _, v := range searchPaths {
 		v = filepath.Clean(v)
 		if Dmesgs {
-			Dmesg("#include_next cleaned sysinclude path to try 'v' %q", v)
+			Dmesg("#include_next cleaned sysinclude path to try 'v' %s", v)
 		}
 		pth := filepath.Join(v, nm)
 		if Dmesgs {
-			Dmesg("#include_next joined 'pth' %q", pth)
+			Dmesg("#include_next joined 'pth' %s", pth)
 		}
 		if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
 			if Dmesgs {
-				Dmesg("#include_next OK")
+				Dmesg("#include_next %s OK, using: %s", nm, v)
 			}
 			c.push(c.included)
 			c.included = &included{using: v}
@@ -1723,9 +1726,13 @@ func (c *cpp) include(ln controlLine) {
 		for _, v := range c.cfg.IncludePaths {
 			if v == "" {
 				v, _ = filepath.Split(ln[2].Position().Filename)
+				v = filepath.Clean(v)
 			}
 			pth := filepath.Join(v, nm)
 			if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
+				if Dmesgs {
+					Dmesg("#include %s OK, using: %s", nm, v)
+				}
 				c.push(c.included)
 				c.included = &included{using: v}
 				c.push(g)
@@ -1740,6 +1747,9 @@ func (c *cpp) include(ln controlLine) {
 		for _, v := range c.cfg.SysIncludePaths {
 			pth := filepath.Join(v, nm)
 			if g, err := c.group(Source{pth, nil, c.cfg.FS}); err == nil {
+				if Dmesgs {
+					Dmesg("#include %s OK, using: %s", nm, v)
+				}
 				c.push(c.included)
 				c.included = &included{using: v}
 				c.push(g)

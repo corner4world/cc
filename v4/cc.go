@@ -31,6 +31,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"sort"
@@ -326,14 +327,20 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 
 	includePaths = includePaths[:len(includePaths):len(includePaths)]
 	sysIncludePaths = sysIncludePaths[:len(sysIncludePaths):len(sysIncludePaths)]
+	for i, v := range includePaths {
+		includePaths[i] = filepath.Clean(v)
+	}
+	for i, v := range sysIncludePaths {
+		sysIncludePaths[i] = filepath.Clean(v)
+	}
 
 	if Dmesgs {
 		defer func() {
 			Dmesg(`NewConfig:
-	HostIncludePaths: %q
-	HostSysIncludePaths: %q
-	IncludePaths: %q
-	SysIncludePaths: %q
+	HostIncludePaths: %v
+	HostSysIncludePaths: %v
+	IncludePaths: %v
+	SysIncludePaths: %v
 `,
 				r.HostIncludePaths,
 				r.HostSysIncludePaths,
