@@ -134,6 +134,7 @@ const (
 	ComplexChar       // _Complex char
 	ComplexDouble     // _Complex double
 	ComplexFloat      // _Complex float
+	ComplexFloat16    // _Complex _Float16
 	ComplexInt        // _Complex int
 	ComplexLong       // _Complex long
 	ComplexLongDouble // _Complex long double
@@ -2275,6 +2276,10 @@ func UsualArithmeticConversions(a, b Type) (r Type) {
 		}
 
 		panic(todo("", a, b))
+	}
+
+	if IsFloatingPointType(a) && IsFloatingPointType(b) && a.Kind() == b.Kind() {
+		return a
 	}
 
 	// Otherwise, the integer promotions are performed on both operands.
