@@ -315,6 +315,10 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		sysIncludePaths = append(sysIncludePaths, "/usr/pkg/include")
 	case "freebsd/386":
 		sysIncludePaths = append(sysIncludePaths, "/usr/local/include")
+	case "illumos/amd64":
+		if !strings.Contains(predefined, "__STDC__") {
+			predefined += "\n#define __STDC__ 1\n"
+		}
 	}
 	abi, err := NewABI(goos, goarch)
 	if err != nil {
