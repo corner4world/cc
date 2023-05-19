@@ -62,7 +62,7 @@ int main() {
     PRINT_TYPE("UInt128", unsigned __int128);
 #endif
 
-#if defined(__GNUC__)&&!defined(__arm__)&&!defined(__ARM_ARCH)
+#if defined(__GNUC__)&&(!defined(__arm__)&&!defined(__ARM_ARCH))&&(!defined(__loongarch__)&&!defined(__loongarch64))
     PRINT_TYPE("Float32", _Float32);
     PRINT_TYPE("Float32x", _Float32x);
     PRINT_TYPE("Float64", _Float64);

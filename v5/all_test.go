@@ -731,7 +731,7 @@ func TestTranslationPhase4(t *testing.T) {
 		"11.c": {},
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
-	case "linux/s390x":
+	case "linux/s390x", "linux/loong64":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	}
 	var files, ok, skip, fails int32
@@ -1105,7 +1105,7 @@ func TestParse(t *testing.T) {
 		"950919-1.c": {},
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
-	case "linux/s390x":
+	case "linux/s390x", "linux/loong64":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	}
 	var files, ok, skip, fails int32
@@ -1357,7 +1357,7 @@ func TestTranslate(t *testing.T) {
 		"950919-1.c": {},
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
-	case "linux/s390x":
+	case "linux/s390x", "linux/loong64":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	case "windows/arm64":
 		blacklistGCC["pr49218.c"] = struct{}{}     //TODO
@@ -1711,6 +1711,7 @@ func TestMake(t *testing.T) {
 		"linux/amd64",
 		"linux/arm",
 		"linux/arm64",
+		"linux/loong64",
 		"linux/riscv64",
 		"linux/s390x",
 		"netbsd/amd64",
@@ -1723,6 +1724,7 @@ func TestMake(t *testing.T) {
 		"linux/amd64",
 		"linux/arm",
 		"linux/arm64",
+		"linux/loong64",
 		"linux/riscv64",
 		"linux/s390x",
 		"netbsd/amd64",
@@ -1739,6 +1741,7 @@ func TestMake(t *testing.T) {
 		"linux/amd64",
 		"linux/arm",
 		"linux/arm64",
+		"linux/loong64",
 		"linux/s390x",
 		"netbsd/amd64",
 		"openbsd/amd64",
@@ -1747,6 +1750,7 @@ func TestMake(t *testing.T) {
 	qbe := []string{
 		"amd64",
 		"arm64",
+		"loong64",
 		"riscv64",
 	}
 	qjs := []string{
@@ -1756,6 +1760,7 @@ func TestMake(t *testing.T) {
 		"linux/amd64",
 		"linux/arm",
 		"linux/arm64",
+		"linux/loong64",
 		"linux/riscv64",
 		"linux/s390x",
 		"netbsd/amd64",
@@ -1769,6 +1774,7 @@ func TestMake(t *testing.T) {
 		"linux/386",
 		"linux/amd64",
 		"linux/arm64",
+		"linux/loong64",
 		"linux/riscv64",
 		"linux/s390x",
 		"openbsd/amd64",
