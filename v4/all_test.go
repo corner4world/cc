@@ -1786,7 +1786,7 @@ func TestMake(t *testing.T) {
 		{"www.mpfr.org/mpfr-current/mpfr-4.1.0.tar.gz", "mpfr-4.1.0", cfg, mpfr},
 		{"ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz", "mpc-1.2.1", cfg, all},
 		{"www.hdfgroup.org/downloads/hdf5/source-code/hdf5-1.12.1.tar.gz", "hdf5-1.12.1", cfg, hdf5},
-		{"musl.libc.org/releases/musl-1.2.2.tar.gz", "musl-1.2.2", cfg, []string{"linux"}},
+		{"musl.libc.org/releases/musl-1.2.4.tar.gz", "musl-1.2.4", cfg, []string{"linux"}},
 		{"github.com/git/git/archive/refs/tags/v2.35.1.tar.gz", "git-2.35.1", cfg.noConfigure(), all},
 		{"github.com/bellard/quickjs/archive/refs/heads/quickjs-master/quickjs-master.tar.gz", "quickjs-master", cfg.noConfigure(), qjs},
 		{"download.redis.io/releases/redis-6.2.6.tar.gz", "redis-6.2.6", cfg.noConfigure(), redis},
