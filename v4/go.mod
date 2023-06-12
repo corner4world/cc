@@ -6,7 +6,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/pmezard/go-difflib v1.0.0
-	modernc.org/ccorpus2 v1.3.0
+	modernc.org/ccorpus2 v1.3.1
 	modernc.org/mathutil v1.5.0
 	modernc.org/opt v0.1.3
 	modernc.org/strutil v1.1.3
