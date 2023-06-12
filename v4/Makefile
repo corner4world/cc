@@ -52,6 +52,7 @@ editor: # ast.go
 	go test -o /dev/null -c
 	go build -o /dev/null fakecc.go
 	go install 2>&1 | tee log-editor
+	staticcheck
 	rm -f ast.go.orig
 
 mem:

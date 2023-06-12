@@ -14,7 +14,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -328,7 +327,7 @@ func getCorpusFile(path string) ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadAll(f)
+	return io.ReadAll(f)
 }
 
 func h(v interface{}) string {
@@ -1595,7 +1594,7 @@ func untar(dst string, r io.Reader, canOverwrite func(fn string, fi os.FileInfo)
 			}
 		case tar.TypeSymlink, tar.TypeXGlobalHeader:
 			// skip
-		case tar.TypeReg, tar.TypeRegA:
+		case tar.TypeReg:
 			dir := filepath.Dir(filepath.Join(dst, hdr.Name))
 			if _, err := os.Stat(dir); err != nil {
 				if !os.IsNotExist(err) {

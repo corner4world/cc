@@ -981,12 +981,12 @@ func (n *Field) Parent() *Field { return n.parent }
 // Index returns the zero based field declaration index.
 func (n *Field) Index() int { return n.index }
 
-func (n *Field) path() (r []int) {
-	if n.parent != nil {
-		r = n.parent.path()
-	}
-	return append(r, n.index)
-}
+//TODO- func (n *Field) path() (r []int) {
+//TODO- 	if n.parent != nil {
+//TODO- 		r = n.parent.path()
+//TODO- 	}
+//TODO- 	return append(r, n.index)
+//TODO- }
 
 // Type reports the type of f.
 func (n *Field) Type() Type { return n.typ.Type() }
@@ -1099,10 +1099,6 @@ func (n *structType) fieldByIndex(i int) *Field {
 }
 
 func (n *structType) fieldByName(nm string) *Field {
-	var a []string
-	for _, v := range n.fields {
-		a = append(a, fmt.Sprintf("%q: %v", v.Name(), v.Type()))
-	}
 	if f := n.m[nm]; f != nil {
 		return f
 	}

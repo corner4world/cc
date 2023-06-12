@@ -723,7 +723,6 @@ type cpp struct {
 	macros      map[string]*Macro
 	mmap        map[mmapKey]*Macro
 	mstack      map[string][]*Macro
-	source      Source
 	sources     []Source
 	stack       []interface{}
 	tok         Token

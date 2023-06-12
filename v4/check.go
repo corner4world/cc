@@ -168,8 +168,13 @@ func newCtx(ast *AST, cfg *Config) *ctx {
 	return c
 }
 
-func (c *ctx) indent() string        { return strings.Repeat("·   ", c.indentN+1) }
-func (c *ctx) indentDec() string     { c.indentN--; return c.indent() }
+//lint:ignore U1000 debug helper
+func (c *ctx) indent() string { return strings.Repeat("·   ", c.indentN+1) }
+
+//lint:ignore U1000 debug helper
+func (c *ctx) indentDec() string { c.indentN--; return c.indent() }
+
+//lint:ignore U1000 debug helper
 func (c *ctx) indentInc() (r string) { r = c.indent(); c.indentN++; return r }
 
 // return a synthesized declarator representing "int nm".
@@ -508,29 +513,31 @@ type resolver struct{ resolved *Scope }
 func (n resolver) ResolvedIn() *Scope { return n.resolved }
 
 type AST struct {
-	ABI                   *ABI
-	Char                  Type // Valid only after Translate
-	Double                Type // Valid only after Translate
-	EOF                   Token
-	Float                 Type // Valid only after Translate
-	Int                   Type // Valid only after Translate
-	Long                  Type // Valid only after Translate
-	LongDouble            Type // Valid only after Translate
-	LongLong              Type // Valid only after Translate
-	Macros                map[string]*Macro
-	PVoid                 Type   // Valid only after Translate
-	SChar                 Type   // Valid only after Translate
-	Scope                 *Scope // File scope.
-	SizeT                 Type   // Valid only after Translate
-	TranslationUnit       *TranslationUnit
-	UChar                 Type // Valid only after Translate
-	UInt                  Type // Valid only after Translate
-	ULong                 Type // Valid only after Translate
-	ULongLong             Type // Valid only after Translate
-	Void                  Type // Valid only after Translate
+	ABI             *ABI
+	EOF             Token
+	Macros          map[string]*Macro
+	Scope           *Scope // File scope.
+	TranslationUnit *TranslationUnit
+
+	// These field are valid only after Translate
+	Char       Type
+	Double     Type
+	Float      Type
+	Int        Type
+	Long       Type
+	LongDouble Type
+	LongLong   Type
+	PVoid      Type
+	SChar      Type
+	SizeT      Type
+	UChar      Type
+	UInt       Type
+	ULong      Type
+	ULongLong  Type
+	Void       Type
+
 	kinds                 map[Kind]Type
 	predefinedDeclarator0 *Declarator // `int __predefined_declarator`
-	cfg                   *Config
 }
 
 func (n *AST) check(cfg *Config) error {
@@ -1509,8 +1516,6 @@ func (n *InitializerList) checkStruct(c *ctx, currObj Type, t *StructType, off i
 
 			n = n.Initializer.check(c, currObj, f.Type(), off+f.Offset(), n, f)
 			f = t.FieldByIndex(f.index + 1)
-			if f != nil {
-			}
 			continue
 		}
 
@@ -2708,7 +2713,6 @@ func (n *StructDeclarationList) checkUnion(c *ctx, a *fieldAllocator, s []*Field
 type fieldAllocator struct {
 	align     int
 	bits      int64
-	brkBits   int64
 	brkBytes  int64
 	fields    []*Field
 	group     []*Field
@@ -2900,8 +2904,7 @@ func (n *StructDeclarationList) checkStruct(c *ctx, a *fieldAllocator, s []*Fiel
 	defer a.close()
 
 	for i, f := range s {
-		ft := f.Type()
-		if ft = f.Type(); (ft.IsIncomplete() || ft.Size() == 0) && ft.Kind() == Array && i == len(s)-1 { // https://en.wikipedia.org/wiki/Flexible_array_member
+		if ft := f.Type(); (ft.IsIncomplete() || ft.Size() == 0) && ft.Kind() == Array && i == len(s)-1 { // https://en.wikipedia.org/wiki/Flexible_array_member
 			f.isFlexibleArrayMember = true
 		}
 
