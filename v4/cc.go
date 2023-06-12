@@ -567,6 +567,8 @@ type Config struct {
 	SysIncludePaths     []string
 	keywords            map[string]rune
 
+	// Header disables type checking of function bodies.
+	Header                 bool
 	doNotInjectFunc        bool // testing
 	fakeIncludes           bool // testing
 	noPredefinedDeclarator bool // testing

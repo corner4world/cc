@@ -702,7 +702,9 @@ func (c *ctx) checkFunctionDefinition(sc *Scope, ds *DeclarationSpecifiers, d *D
 	var sc0 *Scope
 	sc0, c.fnScope = c.fnScope, sc
 	defer func() { c.fnScope = sc0 }()
-	cs.check(c)
+	if !c.cfg.Header {
+		cs.check(c)
+	}
 	return d.Type()
 }
 
