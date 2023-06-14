@@ -878,6 +878,8 @@ type Field struct {
 	offsetBytes           int64
 	outerGroupOffsetBytes int64
 	parent                *Field
+	parentField2          *Field
+	parentType            Type
 	typ                   typer
 	valueBits             int64
 
@@ -900,6 +902,9 @@ func (n *Field) clone() *Field {
 	r.typ.typ = n.typ.typ.clone()
 	return &r
 }
+
+// ParentType returns the type containing 'n'.
+func (n *Field) ParentType() Type { return n.parentType }
 
 // IsFlexibleArrayMember reports whether n is a flexible array member.
 //

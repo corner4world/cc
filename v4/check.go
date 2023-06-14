@@ -3026,6 +3026,25 @@ func (n *StructDeclarator) check(c *ctx, t Type, isAtomic, isConst, isVolatile, 
 		return
 	}
 
+	defer func() {
+		if r == nil {
+			return
+		}
+
+		switch x := t.(type) {
+		case *StructType:
+			for _, v := range x.fields {
+				v.parentType = x
+				v.parentField2 = r
+			}
+		case *UnionType:
+			for _, v := range x.fields {
+				v.parentType = x
+				v.parentField2 = r
+			}
+		}
+	}()
+
 	if n.Declarator != nil {
 		n.Declarator.isAtomic = isAtomic
 		n.Declarator.isConst = isConst

@@ -592,3 +592,65 @@ func LongDouble64Flag(os, arch string) string {
 	}
 	return ""
 }
+
+// LeastCommonAncestorType returns the LCA type containing all field initializers in s.
+func LeastCommonAncestorType(s []*Initializer) (r Type) {
+	if len(s) == 0 {
+		return nil
+	}
+
+	n := 0
+	for _, v := range s {
+		f := v.Field()
+		if f == nil {
+			continue
+		}
+
+		n++
+		if r == nil {
+			r = f.parentType
+			continue
+		}
+
+		if f.parentType != r {
+			r = nil
+			break
+		}
+	}
+	if n == 0 || r != nil {
+		return r
+	}
+
+	m := map[*Field]int{}
+	max := -1
+	for _, v := range s {
+		f := v.Field()
+		if f == nil {
+			continue
+		}
+
+		for p := f.parentField2; p != nil; p = p.parentField2 {
+			m[p]++
+			if n := m[p]; n > max {
+				max = n
+			}
+		}
+	}
+	for len(m) > 1 {
+		for k, v := range m {
+			if v < max {
+				delete(m, k)
+				continue
+			}
+
+			for p := k.parentField2; p != nil; p = p.parentField2 {
+				delete(m, p)
+			}
+		}
+	}
+	for k := range m {
+		return k.Type()
+	}
+
+	return nil
+}
