@@ -983,6 +983,10 @@ func (n *Field) OffsetBits() int { return n.offsetBits }
 // attached, with parent field 'e'.
 func (n *Field) Parent() *Field { return n.parent }
 
+// ParentField reports the parent field of n, if any. ParentField differs from
+// Parent in that it works more generally, not only in certain contexts.
+func (n *Field) ParentField() *Field { return n.parentField2 }
+
 // Index returns the zero based field declaration index.
 func (n *Field) Index() int { return n.index }
 

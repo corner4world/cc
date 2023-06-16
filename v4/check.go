@@ -2645,6 +2645,8 @@ func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier) {
 	}
 	for i, f := range fields {
 		f.index = i
+		// trc("fld %q.%d at %p, set parent type %s", f.Name(), f.Index(), f, s.Type())
+		f.parentType = s.Type()
 	}
 	a := &fieldAllocator{align: 1, fields: fields, list: n}
 	switch x := s.typ.(type) {
@@ -2925,7 +2927,22 @@ func (n *StructDeclaration) check(c *ctx) (r []*Field) {
 		t := n.SpecifierQualifierList.check(c, &isAtomic, &isConst, &isVolatile, &isRestrict, &alignas)
 		switch {
 		case n.StructDeclaratorList == nil:
-			return []*Field{{typ: newTyper(t)}}
+			f := &Field{typ: newTyper(t)}
+			switch x := f.Type().(type) {
+			case *StructType:
+				for _, v := range x.fields {
+					// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), f.Name(), f)
+					v.parentField2 = f
+				}
+			case *UnionType:
+				for _, v := range x.fields {
+					// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), f.Name(), f)
+					v.parentField2 = f
+				}
+			default:
+				trc("%v: %T %s", n.Position(), x, x)
+			}
+			return []*Field{f}
 		default:
 			return n.StructDeclaratorList.check(c, t, isAtomic, isConst, isVolatile, isRestrict)
 		}
@@ -3031,17 +3048,19 @@ func (n *StructDeclarator) check(c *ctx, t Type, isAtomic, isConst, isVolatile, 
 			return
 		}
 
-		switch x := t.(type) {
+		switch x := r.Type().(type) {
 		case *StructType:
 			for _, v := range x.fields {
-				v.parentType = x
+				// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), r.Name(), r)
 				v.parentField2 = r
 			}
 		case *UnionType:
 			for _, v := range x.fields {
-				v.parentType = x
+				// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), r.Name(), r)
 				v.parentField2 = r
 			}
+		default:
+			// trc("%v: %T %s", n.Position(), x, x)
 		}
 	}()
 
