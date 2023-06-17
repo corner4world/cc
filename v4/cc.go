@@ -389,6 +389,7 @@ func adjustLongDouble(predefined string, abi *ABI) error {
 	}
 
 	abi.Types[LongDouble] = abi.Types[Double]
+	abi.Types[ComplexLongDouble] = abi.Types[ComplexDouble]
 	return nil
 }
 
