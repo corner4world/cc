@@ -576,15 +576,39 @@ func (f *fset) Position(pos int32) mtoken.Position {
 func LongDouble64Flag(os, arch string) string {
 	switch fmt.Sprintf("%s/%s", os, arch) {
 	case
+
+		// abi.go:
+		//  71:			LongDouble: {16, 16, 16},	{"linux", "amd64"}	-mlong-double-64
+		// 100:			LongDouble: {12, 4, 4},		{"linux", "386"}	-mlong-double-64
+		// 149:			LongDouble: {16, 16, 16},	{"linux", "arm64"}	gcc: error: unrecognized command-line option ‘-mlong-double-64’
+		// 178:			LongDouble: {16, 16, 16},	{"linux", "riscv64"}	gcc: error: unrecognized command-line option ‘-mlong-double-64’
+		// 209:			LongDouble: {16, 16, 16},	{"windows", "amd64"}
+		// 262:			LongDouble: {12, 4, 4},		{"windows", "386"}
+		// 283:			LongDouble: {16, 16, 16},	{"darwin", "amd64"}	-mlong-double-64
+		// 336:			LongDouble: {16, 8, 8},		{"linux", "s390x"}	-mlong-double-64
+		// 359:			LongDouble: {16, 16, 16},	{"freebsd", "amd64"}	-mlong-double-64
+		// 386:			LongDouble: {12, 4, 4},		{"freebsd", "386"}	-mlong-double-64
+		// 440:			LongDouble: {16, 16, 16},	{"freebsd", "arm64"}	gcc: error: unrecognized command-line option '-mlong-double-64'
+		// 459:			LongDouble: {16, 16, 16},	{"openbsd", "amd64"}	-mlong-double-64
+		// 492:			LongDouble: {16, 16, 16},	{"openbsd", "arm64"}	cc: error: unsupported option '-mlong-double-64' for target 'aarch64-unknown-openbsd7.3'
+		// 516:			LongDouble: {12, 4, 4},		{"openbsd", "386"}	-mlong-double-64
+		// 533:			LongDouble: {16, 16, 16},	{"netbsd", "amd64"}	-mlong-double-64
+		// 588:			LongDouble: {12, 4, 4},		{"netbsd", "386"}	-mlong-double-64
+		// 614:			LongDouble: {16, 16, 16},	{"linux", "ppc64le"}	-mlong-double-64
+		// 647:			LongDouble: {16, 16, 16},	{"linux", "loong64"}	gcc: error: unrecognized command-line option ‘-mlong-double-64’
+
 		//TODO linux/riscv64 builder is currently MIA
-		"darwin/amd64",
-		"freebsd/386",
-		"freebsd/amd64",
-		"linux/386",
-		"linux/amd64",
-		"linux/s390x",
-		"netbsd/amd64",
-		"openbsd/amd64",
+		"darwin/amd64",  // Apple clang version 12.0.0 (clang-1200.0.32.29) ok (fake gcc)
+		"freebsd/386",   // gcc (FreeBSD Ports Collection) 12.2.0 ok
+		"freebsd/amd64", // gcc (FreeBSD Ports Collection) 12.2.0 ok
+		"linux/386",     // gcc (Debian 10.2.1-6) 10.2.1 20210110 ok
+		"linux/amd64",   // gcc (Debian 10.2.1-6) 10.2.1 20210110 ok
+		"linux/s390x",   // gcc (Debian 10.2.1-6) 10.2.1 20210110 ok
+		"netbsd/amd64",  // gcc (nb4 20200810) 7.5.0 ok
+		"netbsd/386",    // gcc (nb4 20200810) 7.5.0
+		"openbsd/386",   // OpenBSD clang version 13.0.0 ok
+		"openbsd/amd64", // gcc (GCC) 11.2.0 ok
+		"linux/ppc64le", // gcc (Debian 10.2.1-6) 10.2.1 20210110
 		"windows/386",
 		"windows/amd64":
 

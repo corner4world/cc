@@ -325,8 +325,16 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		return nil, err
 	}
 
-	if err := adjustLongDouble(predefined, abi); err != nil {
-		return nil, err
+	if s := LongDouble64Flag(goos, goarch); s != "" {
+		for _, v := range opts {
+			if v == s {
+				if err := adjustLongDouble(predefined, abi); err != nil {
+					return nil, err
+				}
+
+				break
+			}
+		}
 	}
 
 	includePaths = includePaths[:len(includePaths):len(includePaths)]
@@ -364,6 +372,11 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		SysIncludePaths:     sysIncludePaths,
 		keywords:            keywords,
 	}, nil
+}
+
+// AdjustLongDouble will force C long double to have the same size as C double.
+func (c *Config) AdjustLongDouble() error {
+	return adjustLongDouble(c.Predefined, c.ABI)
 }
 
 func adjustLongDouble(predefined string, abi *ABI) error {
