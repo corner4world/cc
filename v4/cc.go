@@ -35,7 +35,6 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 
 	"modernc.org/opt"
@@ -325,18 +324,6 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		return nil, err
 	}
 
-	if s := LongDouble64Flag(goos, goarch); s != "" {
-		for _, v := range opts {
-			if v == s {
-				if err := adjustLongDouble(predefined, abi); err != nil {
-					return nil, err
-				}
-
-				break
-			}
-		}
-	}
-
 	includePaths = includePaths[:len(includePaths):len(includePaths)]
 	sysIncludePaths = sysIncludePaths[:len(sysIncludePaths):len(sysIncludePaths)]
 	for i, v := range includePaths {
@@ -362,7 +349,7 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		}()
 	}
 
-	return &Config{
+	r = &Config{
 		ABI:                 abi,
 		CC:                  cc,
 		Predefined:          predefined,
@@ -371,37 +358,47 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 		IncludePaths:        append([]string{""}, append(includePaths, sysIncludePaths...)...),
 		SysIncludePaths:     sysIncludePaths,
 		keywords:            keywords,
-	}, nil
+	}
+
+	if s := LongDouble64Flag(goos, goarch); s != "" {
+		for _, v := range opts {
+			if v == s {
+				if err := r.AdjustLongDouble(); err != nil {
+					return nil, err
+				}
+
+				break
+			}
+		}
+	}
+	return r, nil
 }
 
-// AdjustLongDouble will force C long double to have the same size as C double.
+// AdjustLongDouble will force C long double to have the same size as Go float64
+// and C complex long double as Go complex128.
 func (c *Config) AdjustLongDouble() error {
-	return adjustLongDouble(c.Predefined, c.ABI)
-}
+	abi := c.ABI
+	if n := abi.Types[Double].Size; n != 8 {
+		return fmt.Errorf("unexpected C double size: %v", n)
+	}
 
-func adjustLongDouble(predefined string, abi *ABI) error {
+	if n := abi.Types[ComplexDouble].Size; n != 16 {
+		return fmt.Errorf("unexpected C complex double size: %v", n)
+	}
+
 	const tag = "#define __SIZEOF_LONG_DOUBLE__ "
-	x := strings.Index(predefined, tag)
+	a := strings.Split(c.Predefined, tag)
+	if len(a) != 2 {
+		return fmt.Errorf("%s not found", tag)
+	}
+
+	x := strings.Index(a[1], "\n")
 	if x < 0 {
-		return nil
+		return fmt.Errorf("valid %s not found", tag)
 	}
 
-	y := x + len(tag)
-	for ; y < len(predefined) && predefined[y] >= '0' && predefined[y] <= '9'; y++ {
-	}
-	n, err := strconv.ParseInt(predefined[x+len(tag):y], 10, 32)
-	if err != nil {
-		return fmt.Errorf("parsing %s: %v", tag, err)
-	}
-	if abi.Types[LongDouble].Size == n {
-		return nil
-	}
-
-	if abi.Types[Double].Size != n {
-		return nil
-	}
-
-	abi.Types[LongDouble] = abi.Types[Double]
+	c.Predefined = fmt.Sprintf("%s%s%d%s", a[0], tag, 8, a[1][x:])
+	c.ABI.Types[LongDouble] = c.ABI.Types[Double]
 	abi.Types[ComplexLongDouble] = abi.Types[ComplexDouble]
 	return nil
 }
