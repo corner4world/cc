@@ -278,8 +278,14 @@ func (c *ctx) checkScope(s *Scope) {
 						}
 					}
 				}
-				for i := range ds {
-					ds[i].typ = t
+				for _, v := range ds {
+					var err error
+					if t, err = mergeAttr(t, v.Type().Attributes()); err != nil {
+						c.errors.add(errorf("%v: %v", v.Position()))
+					}
+				}
+				for _, v := range ds {
+					v.typ = t
 				}
 			}
 		}
