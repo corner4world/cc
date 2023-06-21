@@ -1000,15 +1000,9 @@ func (n *Declaration) check(c *ctx) {
 		if attr := n.AttributeSpecifierList.check(c); attr != nil {
 			for l := n.InitDeclaratorList; l != nil; l = l.InitDeclaratorList {
 				d := l.InitDeclarator.Declarator
-				t := d.Type()
-				new, err := attr.merge(d, t.Attributes())
-				if err != nil {
+				var err error
+				if d.typ, err = mergeAttr(d.Type(), attr); err != nil {
 					c.errors.add(errorf("%v", err))
-					continue
-				}
-
-				if new != nil {
-					d.typ = t.setAttr(new)
 				}
 			}
 		}
@@ -1067,8 +1061,10 @@ func (n *InitDeclarator) check(c *ctx, t Type, isExtern, isStatic, isAtomic, isT
 	n.Declarator.alignas = alignas
 	t = n.Declarator.check(c, t)
 	if attr := n.AttributeSpecifierList.check(c); attr != nil {
-		t = t.setAttr(attr)
-		n.Declarator.typ = t
+		var err error
+		if n.Declarator.typ, err = mergeAttr(n.Declarator.Type(), attr); err != nil {
+			c.errors.add(errorf("%v", err))
+		}
 	}
 	if n.Asm != nil {
 		n.Asm.check(c)
@@ -1791,6 +1787,23 @@ func (n *Declarator) check(c *ctx, t Type) (r Type) {
 		r = r.setName(n)
 	}
 	n.typ = r
+	if attr := t.Attributes(); attr != nil {
+		a2 := &Attributes{}
+		if attr.weak {
+			a2.weak = true
+			a2.isNonZero = true
+		}
+		if attr.alias != "" {
+			a2.alias = attr.alias
+			a2.isNonZero = true
+		}
+		if a2.isNonZero {
+			var err error
+			if n.typ, err = mergeAttr(r, a2); err != nil {
+				c.errors.add(errorf("%v: %v", n.Position(), err))
+			}
+		}
+	}
 	if n.IsParam() {
 		n.typ = r.Decay()
 	}
@@ -2051,7 +2064,10 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			r = Invalid
 		}
 		if attr != nil {
-			r = r.setAttr(attr)
+			var err error
+			if r, err = mergeAttr(r, attr); err != nil {
+				c.errors.add(errorf("%v", err))
+			}
 		}
 		n.typ = r
 	}(n)
@@ -2151,11 +2167,20 @@ func (n *AttributeValueList) check(c *ctx, attr *Attributes) {
 func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 	switch n.Case {
 	case AttributeValueIdent: // IDENTIFIER
-		// ok
+		switch n.Token.SrcStr() {
+		case
+			"__weak__",
+			"weak":
+
+			attr.setWeak()
+		}
 	case AttributeValueExpr: // IDENTIFIER '(' ArgumentExpressionList ')'
 		n.ArgumentExpressionList.check(c, decay|ignoreUndefined)
 		switch n.Token.SrcStr() {
-		case "alias":
+		case
+			"__alias__",
+			"alias":
+
 			e := n.ArgumentExpressionList.AssignmentExpression
 			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
 				c.errors.add(errorf("%v: expected one expression", e.Position()))
@@ -2168,7 +2193,7 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 				return
 			}
 
-			attr.setAlias(string(x))
+			attr.setAlias(strings.TrimRight(string(x), "\x00"))
 		case "aligned":
 			e := n.ArgumentExpressionList.AssignmentExpression
 			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
@@ -2970,7 +2995,10 @@ func (n *SpecifierQualifierList) check(c *ctx, isAtomic, isConst, isVolatile, is
 		}
 
 		if attr != nil {
-			r = r.setAttr(attr)
+			var err error
+			if r, err = mergeAttr(r, attr); err != nil {
+				c.errors.add(errorf("%v", err))
+			}
 		}
 	}()
 

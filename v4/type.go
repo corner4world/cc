@@ -260,6 +260,24 @@ type Type interface {
 	str(b *strings.Builder, useTag bool) *strings.Builder
 }
 
+func mergeAttr(t Type, a *Attributes) (Type, error) {
+	if a == nil {
+		return t, nil
+	}
+
+	attr := t.Attributes()
+	if attr == nil {
+		return t.setAttr(a), nil
+	}
+
+	new, err := attr.merge(nil, a)
+	if err != nil {
+		return t, err
+	}
+
+	return t.setAttr(new), nil
+}
+
 type noBitField struct{}
 
 // BitField implements Type.
@@ -2409,6 +2427,7 @@ type Attributes struct {
 	vectorSize int64
 
 	isNonZero bool
+	weak      bool
 }
 
 func newAttributes() *Attributes {
@@ -2421,6 +2440,7 @@ func newAttributes() *Attributes {
 func (n *Attributes) setAlias(v string)     { n.alias = v; n.isNonZero = true }
 func (n *Attributes) setAligned(v int64)    { n.aligned = v; n.isNonZero = true }
 func (n *Attributes) setVectorSize(v int64) { n.vectorSize = v; n.isNonZero = true }
+func (n *Attributes) setWeak()              { n.weak = true; n.isNonZero = true }
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	if n == nil {
@@ -2502,6 +2522,9 @@ func (n *Attributes) Aligned() int64 { return n.aligned }
 // The vector_size attribute is only applicable to integral and floating
 // scalars, otherwise it's ignored.
 func (n *Attributes) VectorSize() int64 { return n.vectorSize }
+
+// Weak reports 'weak', as in __attribute__((weak, alias("S"))), is present.
+func (n *Attributes) Weak() bool { return n.weak }
 
 type attributer struct{ p *Attributes }
 
