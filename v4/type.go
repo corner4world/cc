@@ -2506,6 +2506,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.vectorSize = n.vectorSize
 	}
 
+	switch {
+	case n.weak || m.weak:
+		r.weak = true
+	}
+
 	return r, nil
 }
 
