@@ -338,7 +338,9 @@ func (p *parser) parse() (ast *AST, err error) {
 	}
 	p.cpp.rune()
 	tu := p.translationUnit()
-	p.cpp.mmap = nil
+
+	defer func() { p.cpp.mmap = nil }()
+
 	if p.scope == nil && p.scope.Parent != nil {
 		p.cpp.eh("internal error (%v:)", origin(1))
 	}

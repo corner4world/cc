@@ -1074,9 +1074,7 @@ func (n *InitDeclarator) check(c *ctx, t Type, isExtern, isStatic, isAtomic, isT
 	}
 	if n.Asm != nil {
 		n.Asm.check(c)
-		return
 	}
-
 	if n.Case == InitDeclaratorInit {
 		u := t.clone()
 		n.Initializer.check(c, nil, u, 0, nil, nil)
@@ -4277,7 +4275,10 @@ out:
 			}
 			break out
 		default:
-			if d = n.LexicalScope().builtin(n.Token); d == nil {
+			if !c.cfg.freeStanding && !c.cfg.noBuiltin {
+				d = n.LexicalScope().builtin(n.Token)
+			}
+			if d == nil {
 				d = c.predefinedDeclarator(n.Token, n.LexicalScope())
 				d.isExtern = true
 				d.isParam = false

@@ -81,6 +81,7 @@ typedef __PTRDIFF_TYPE__ __predefined_ptrdiff_t;
 #define __FUNCTION__ __func__
 #define __PRETTY_FUNCTION__ __func__
 
+#if __STDC_HOSTED__
 #ifdef __clang__
 #define __builtin_convertvector(src, type) ((type)(src))
 #endif
@@ -251,6 +252,7 @@ int __darwin_check_fd_set_overflow(int, void *, int) {
 	__builtin_abort();
 }
 #endif
+#endif // __STDC_HOSTED__
 `
 
 //TODO
@@ -371,6 +373,14 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 			}
 		}
 	}
+
+	set := opt.NewSet()
+	set.Opt("ffreestanding", func(opt string) error { r.freeStanding = true; return nil })
+	set.Opt("fno-builtin", func(opt string) error { r.noBuiltin = true; return nil })
+	if err := set.Parse(opts, func(arg string) error { return nil }); err != nil {
+		return nil, errorf("parsing %v: %v", opts, err)
+	}
+
 	return r, nil
 }
 
@@ -582,6 +592,8 @@ type Config struct {
 	Header                 bool
 	doNotInjectFunc        bool // testing
 	fakeIncludes           bool // testing
+	freeStanding           bool // -ffreestanding, implies -fno-builtin
+	noBuiltin              bool // -fno-builtin
 	noPredefinedDeclarator bool // testing
 }
 
