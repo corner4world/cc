@@ -195,14 +195,14 @@ func (t typer) Type() Type {
 //
 // The dynamic type of a Type is one of
 //
-//  *ArrayType
-//  *EnumType
-//  *FunctionType
-//  *InvalidType
-//  *PointerType
-//  *PredefinedType
-//  *StructType
-//  *UnionType
+//	*ArrayType
+//	*EnumType
+//	*FunctionType
+//	*InvalidType
+//	*PointerType
+//	*PredefinedType
+//	*StructType
+//	*UnionType
 type Type interface {
 	// Align reports the minimum alignment required by a type.
 	Align() int
@@ -2165,7 +2165,7 @@ func IsSignedInteger(t Type) bool {
 
 // UsualArithmeticConversions returns the common type of a binary operation.
 //
-//   [0] 6.3.1.8 Usual arithmetic conversions
+//	[0] 6.3.1.8 Usual arithmetic conversions
 func UsualArithmeticConversions(a, b Type) (r Type) {
 	defer func(a, b Type) {
 		x := a.BitField()

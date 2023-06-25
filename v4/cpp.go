@@ -126,11 +126,13 @@ func (p *cppParser) shift() (r []Token) {
 func (p *cppParser) preprocessingFile() group { return p.group(false) }
 
 // group:
+//
 //	group-part
 //	group group-part
 type group []groupPart
 
 // group:
+//
 //	group-part
 //	group group-part
 func (p *cppParser) group(inIfSection bool) (r group) {
@@ -149,11 +151,12 @@ func (p *cppParser) group(inIfSection bool) (r group) {
 }
 
 // group-part:
-// 	if-section
-// 	control-line
-// 	text-line
-// 	# non-directive
-// 	eof-line
+//
+//	if-section
+//	control-line
+//	text-line
+//	# non-directive
+//	eof-line
 type groupPart interface{}
 
 // groupPart parses a group-part.
@@ -216,16 +219,17 @@ func (p *cppParser) groupPart(inIfSection bool) groupPart {
 // controlLine parses an control-line. At unexpected eof it returns ok == false.
 //
 // control-line:
-// 	# include pp-tokens new-line
-// 	# define identifier replacement-list new-line
-// 	# define identifier lparen identifier-list_opt ) replacement-list new-line
-// 	# define identifier lparen ... ) replacement-list new-line
-// 	# define identifier lparen identifier-list , ... ) replacement-list new-line
-// 	# undef identifier new-line
-// 	# line pp-tokens new-line
-// 	# error pp-tokens_opt new-line
-// 	# pragma pp-tokens_opt new-line
-// 	# new-line
+//
+//	# include pp-tokens new-line
+//	# define identifier replacement-list new-line
+//	# define identifier lparen identifier-list_opt ) replacement-list new-line
+//	# define identifier lparen ... ) replacement-list new-line
+//	# define identifier lparen identifier-list , ... ) replacement-list new-line
+//	# undef identifier new-line
+//	# line pp-tokens new-line
+//	# error pp-tokens_opt new-line
+//	# pragma pp-tokens_opt new-line
+//	# new-line
 type controlLine []Token
 
 // textLine is a groupPart representing a source line not starting with '#'.
@@ -239,6 +243,7 @@ type eofLine Token
 type nonDirective []Token
 
 // if-section:
+//
 //	if-group elif-groups_opt else-group_opt endif-line
 type ifSection struct {
 	ifGroup    *ifGroup
@@ -260,7 +265,8 @@ func (p *cppParser) ifSection() *ifSection {
 // endifLine parses:
 
 // endif-line:
-// 	# endif new-line
+//
+//	# endif new-line
 func (p *cppParser) endifLine() []Token {
 	if p.rune() != '#' || p.line[1].SrcStr() != "endif" {
 		p.eh("%v: expected #endif", p.pos())
@@ -271,6 +277,7 @@ func (p *cppParser) endifLine() []Token {
 }
 
 // else-group:
+//
 //	# else new-line group_opt
 type elseGroup struct {
 	line  []Token
@@ -287,6 +294,7 @@ func (p *cppParser) elseGroup() (r *elseGroup) {
 }
 
 // elif-group:
+//
 //	# elif constant-expression new-line group_opt
 type elifGroup struct {
 	line  []Token
@@ -296,6 +304,7 @@ type elifGroup struct {
 // elifGroups parses:
 //
 // elif-groups:
+//
 //	elif-group
 //	elif-groups elif-group
 func (p *cppParser) elifGroups() (r []elifGroup) {
@@ -306,6 +315,7 @@ func (p *cppParser) elifGroups() (r []elifGroup) {
 }
 
 // if-group:
+//
 //	# if constant-expression new-line group_opt
 //	# ifdef identifier new-line group_opt
 //	# ifndef identifier new-line group_opt
@@ -1892,9 +1902,9 @@ func (c *cpp) eval(s0 []Token) interface{} {
 
 // [0], 6.5.17 Comma operator
 //
-//  expression:
-// 	assignment-expression
-// 	expression , assignment-expression
+//	 expression:
+//		assignment-expression
+//		expression , assignment-expression
 func (c *cpp) expression(s *cppTokens, eval bool) interface{} {
 	for {
 		r := c.assignmentExpression(s, eval)
@@ -1908,21 +1918,21 @@ func (c *cpp) expression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.16 Assignment operators
 //
-//  assignment-expression:
-// 	conditional-expression
-// 	unary-expression assignment-operator assignment-expression
+//	 assignment-expression:
+//		conditional-expression
+//		unary-expression assignment-operator assignment-expression
 //
-//  assignment-operator: one of
-// 	= *= /= %= += -= <<= >>= &= ^= |=
+//	 assignment-operator: one of
+//		= *= /= %= += -= <<= >>= &= ^= |=
 func (c *cpp) assignmentExpression(s *cppTokens, eval bool) interface{} {
 	return c.conditionalExpression(s, eval)
 }
 
 // [0], 6.5.15 Conditional operator
 //
-//  conditional-expression:
-//		logical-OR-expression
-//		logical-OR-expression ? expression : conditional-expression
+//	 conditional-expression:
+//			logical-OR-expression
+//			logical-OR-expression ? expression : conditional-expression
 func (c *cpp) conditionalExpression(s *cppTokens, eval bool) interface{} {
 	expr := c.logicalOrExpression(s, eval)
 	if s.rune() == '?' {
@@ -1966,9 +1976,9 @@ func (c *cpp) conditionalExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.14 Logical OR operator
 //
-//  logical-OR-expression:
-//		logical-AND-expression
-//		logical-OR-expression || logical-AND-expression
+//	 logical-OR-expression:
+//			logical-AND-expression
+//			logical-OR-expression || logical-AND-expression
 func (c *cpp) logicalOrExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.logicalAndExpression(s, eval)
 	for s.rune() == rune(OROR) {
@@ -1986,9 +1996,9 @@ func (c *cpp) logicalOrExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.13 Logical AND operator
 //
-//  logical-AND-expression:
-//		inclusive-OR-expression
-//		logical-AND-expression && inclusive-OR-expression
+//	 logical-AND-expression:
+//			inclusive-OR-expression
+//			logical-AND-expression && inclusive-OR-expression
 func (c *cpp) logicalAndExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.inclusiveOrExpression(s, eval)
 	for s.rune() == rune(ANDAND) {
@@ -2006,9 +2016,9 @@ func (c *cpp) logicalAndExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.12 Bitwise inclusive OR operator
 //
-//  inclusive-OR-expression:
-//		exclusive-OR-expression
-//		inclusive-OR-expression | exclusive-OR-expression
+//	 inclusive-OR-expression:
+//			exclusive-OR-expression
+//			inclusive-OR-expression | exclusive-OR-expression
 func (c *cpp) inclusiveOrExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.exclusiveOrExpression(s, eval)
 	for s.rune() == '|' {
@@ -2038,9 +2048,9 @@ func (c *cpp) inclusiveOrExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.11 Bitwise exclusive OR operator
 //
-//  exclusive-OR-expression:
-//		AND-expression
-//		exclusive-OR-expression ^ AND-expression
+//	 exclusive-OR-expression:
+//			AND-expression
+//			exclusive-OR-expression ^ AND-expression
 func (c *cpp) exclusiveOrExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.andExpression(s, eval)
 	for s.rune() == '^' {
@@ -2070,9 +2080,9 @@ func (c *cpp) exclusiveOrExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.10 Bitwise AND operator
 //
-//  AND-expression:
-// 		equality-expression
-// 		AND-expression & equality-expression
+//	 AND-expression:
+//			equality-expression
+//			AND-expression & equality-expression
 func (c *cpp) andExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.equalityExpression(s, eval)
 	for s.rune() == '&' {
@@ -2102,10 +2112,10 @@ func (c *cpp) andExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.9 Equality operators
 //
-//  equality-expression:
-//		relational-expression
-//		equality-expression == relational-expression
-//		equality-expression != relational-expression
+//	 equality-expression:
+//			relational-expression
+//			equality-expression == relational-expression
+//			equality-expression != relational-expression
 func (c *cpp) equalityExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.relationalExpression(s, eval)
 	for {
@@ -2167,12 +2177,12 @@ func (c *cpp) equalityExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.8 Relational operators
 //
-//  relational-expression:
-//		shift-expression
-//		relational-expression <  shift-expression
-//		relational-expression >  shift-expression
-//		relational-expression <= shift-expression
-//		relational-expression >= shift-expression
+//	 relational-expression:
+//			shift-expression
+//			relational-expression <  shift-expression
+//			relational-expression >  shift-expression
+//			relational-expression <= shift-expression
+//			relational-expression >= shift-expression
 func (c *cpp) relationalExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.shiftExpression(s, eval)
 	for {
@@ -2276,10 +2286,10 @@ func (c *cpp) relationalExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.7 Bitwise shift operators
 //
-//  shift-expression:
-//		additive-expression
-//		shift-expression << additive-expression
-//		shift-expression >> additive-expression
+//	 shift-expression:
+//			additive-expression
+//			shift-expression << additive-expression
+//			shift-expression >> additive-expression
 func (c *cpp) shiftExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.additiveExpression(s, eval)
 	for {
@@ -2334,10 +2344,10 @@ func (c *cpp) shiftExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.6 Additive operators
 //
-//  additive-expression:
-//		multiplicative-expression
-//		additive-expression + multiplicative-expression
-//		additive-expression - multiplicative-expression
+//	 additive-expression:
+//			multiplicative-expression
+//			additive-expression + multiplicative-expression
+//			additive-expression - multiplicative-expression
 func (c *cpp) additiveExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.multiplicativeExpression(s, eval)
 	for {
@@ -2392,11 +2402,11 @@ func (c *cpp) additiveExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.5 Multiplicative operators
 //
-//  multiplicative-expression:
-//		unary-expression // [0], 6.10.1, 1.
-//		multiplicative-expression * unary-expression
-//		multiplicative-expression / unary-expression
-//		multiplicative-expression % unary-expression
+//	 multiplicative-expression:
+//			unary-expression // [0], 6.10.1, 1.
+//			multiplicative-expression * unary-expression
+//			multiplicative-expression / unary-expression
+//			multiplicative-expression % unary-expression
 func (c *cpp) multiplicativeExpression(s *cppTokens, eval bool) interface{} {
 	lhs := c.unaryExpression(s, eval)
 	for {
@@ -2512,12 +2522,12 @@ func (c *cpp) multiplicativeExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.3 Unary operators
 //
-//  unary-expression:
-//		primary-expression
-//		unary-operator unary-expression
+//	 unary-expression:
+//			primary-expression
+//			unary-operator unary-expression
 //
-//  unary-operator: one of
-//		+ - ~ !
+//	 unary-operator: one of
+//			+ - ~ !
 func (c *cpp) unaryExpression(s *cppTokens, eval bool) interface{} {
 	switch s.token().Ch {
 	case '+':
@@ -2573,10 +2583,10 @@ func (c *cpp) unaryExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.5.1 Primary expressions
 //
-//  primary-expression:
-//		identifier
-//		constant
-//		( expression )
+//	 primary-expression:
+//			identifier
+//			constant
+//			( expression )
 func (c *cpp) primaryExpression(s *cppTokens, eval bool) interface{} {
 	switch t := s.token(); t.Ch {
 	case rune(CHARCONST), rune(LONGCHARCONST):
@@ -2671,24 +2681,24 @@ func (c *cpp) primaryExpression(s *cppTokens, eval bool) interface{} {
 
 // [0], 6.4.4.1 Integer constants
 //
-//  integer-constant:
-//		decimal-constant integer-suffix_opt
-//		octal-constant integer-suffix_opt
-//		hexadecimal-constant integer-suffix_opt
+//	 integer-constant:
+//			decimal-constant integer-suffix_opt
+//			octal-constant integer-suffix_opt
+//			hexadecimal-constant integer-suffix_opt
 //
-//  decimal-constant:
-//		nonzero-digit
-//		decimal-constant digit
+//	 decimal-constant:
+//			nonzero-digit
+//			decimal-constant digit
 //
-//  octal-constant:
-//		0
-//		octal-constant octal-digit
+//	 octal-constant:
+//			0
+//			octal-constant octal-digit
 //
-//  hexadecimal-prefix: one of
-//		0x 0X
+//	 hexadecimal-prefix: one of
+//			0x 0X
 //
-//  integer-suffix_opt: one of
-//		u ul ull l lu ll llu
+//	 integer-suffix_opt: one of
+//			u ul ull l lu ll llu
 func (c *cpp) intConst(t Token) (r interface{}) {
 	var n uint64
 	s0 := t.SrcStr()

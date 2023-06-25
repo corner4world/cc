@@ -12,17 +12,17 @@
 
 // Package cc is a C99 compiler front end.
 //
-// Online documentation
+// # Online documentation
 //
 // See https://godoc.org/modernc.org/cc/v4.
 //
-// Links
+// # Links
 //
 // Referenced from elsewhere:
 //
-//  [0]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf
-//  [1]: https://www.spinellis.gr/blog/20060626/cpp.algo.pdf
-//  [2]: https://jhjourdan.mketjh.fr/pdf/jourdan2017simple.pdf
+//	[0]: http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf
+//	[1]: https://www.spinellis.gr/blog/20060626/cpp.algo.pdf
+//	[2]: https://jhjourdan.mketjh.fr/pdf/jourdan2017simple.pdf
 package cc // import "modernc.org/cc/v4"
 
 import (
@@ -255,7 +255,7 @@ int __darwin_check_fd_set_overflow(int, void *, int) {
 #endif // __STDC_HOSTED__
 `
 
-//TODO
+// TODO
 // int __builtin_isalnum_l(int c, locale_t locale);
 // int __builtin_isalpha_l(int c, locale_t locale);
 // int __builtin_isascii_l(int c, locale_t locale);
