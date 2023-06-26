@@ -174,7 +174,9 @@ func newCtx(ast *AST, cfg *Config) *ctx {
 	ast.LongLong = c.ast.kinds[LongLong]
 	ast.PVoid = c.pvoidT
 	ast.SChar = c.ast.kinds[SChar]
+	ast.Short = c.ast.kinds[Short]
 	ast.UChar = c.ast.kinds[UChar]
+	ast.UShort = c.ast.kinds[UShort]
 	ast.UInt = c.ast.kinds[UInt]
 	ast.ULong = c.ast.kinds[ULong]
 	ast.ULongLong = c.ast.kinds[ULongLong]
@@ -556,11 +558,13 @@ type AST struct {
 	LongLong   Type
 	PVoid      Type
 	SChar      Type
+	Short      Type
 	SizeT      Type
 	UChar      Type
 	UInt       Type
 	ULong      Type
 	ULongLong  Type
+	UShort     Type
 	Void       Type
 
 	kinds                 map[Kind]Type
