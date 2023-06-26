@@ -101,6 +101,7 @@ func (n AdditiveExpressionCase) String() string {
 type AdditiveExpression struct {
 	typer
 	valuer
+	purer
 	AdditiveExpression       ExpressionNode
 	Case                     AdditiveExpressionCase `PrettyPrint:"stringer,zero"`
 	MultiplicativeExpression ExpressionNode
@@ -241,6 +242,7 @@ func (n AndExpressionCase) String() string {
 type AndExpression struct {
 	typer
 	valuer
+	purer
 	AndExpression      ExpressionNode
 	Case               AndExpressionCase `PrettyPrint:"stringer,zero"`
 	EqualityExpression ExpressionNode
@@ -590,6 +592,7 @@ func (n AssignmentExpressionCase) String() string {
 type AssignmentExpression struct {
 	typer
 	valuer
+	purer
 	AssignmentExpression  ExpressionNode
 	Case                  AssignmentExpressionCase `PrettyPrint:"stringer,zero"`
 	ConditionalExpression ExpressionNode
@@ -940,6 +943,7 @@ func (n CastExpressionCase) String() string {
 type CastExpression struct {
 	typer
 	valuer
+	purer
 	Case            CastExpressionCase `PrettyPrint:"stringer,zero"`
 	CastExpression  ExpressionNode
 	Token           Token
@@ -1040,6 +1044,7 @@ func (n ConditionalExpressionCase) String() string {
 type ConditionalExpression struct {
 	typer
 	valuer
+	purer
 	Case                  ConditionalExpressionCase `PrettyPrint:"stringer,zero"`
 	ConditionalExpression ExpressionNode
 	ExpressionList        ExpressionNode
@@ -1090,6 +1095,7 @@ func (n *ConditionalExpression) Position() (r token.Position) {
 type ConstantExpression struct {
 	typer
 	valuer
+	purer
 	ConditionalExpression ExpressionNode
 }
 
@@ -2083,6 +2089,7 @@ func (n EqualityExpressionCase) String() string {
 type EqualityExpression struct {
 	typer
 	valuer
+	purer
 	Case                 EqualityExpressionCase `PrettyPrint:"stringer,zero"`
 	EqualityExpression   ExpressionNode
 	RelationalExpression ExpressionNode
@@ -2145,6 +2152,7 @@ func (n ExclusiveOrExpressionCase) String() string {
 type ExclusiveOrExpression struct {
 	typer
 	valuer
+	purer
 	AndExpression         ExpressionNode
 	Case                  ExclusiveOrExpressionCase `PrettyPrint:"stringer,zero"`
 	ExclusiveOrExpression ExpressionNode
@@ -2207,6 +2215,7 @@ func (n ExpressionListCase) String() string {
 type ExpressionList struct {
 	typer
 	valuer
+	purer
 	AssignmentExpression ExpressionNode
 	ExpressionList       *ExpressionList
 	Token                Token
@@ -2590,6 +2599,7 @@ func (n InclusiveOrExpressionCase) String() string {
 type InclusiveOrExpression struct {
 	typer
 	valuer
+	purer
 	Case                  InclusiveOrExpressionCase `PrettyPrint:"stringer,zero"`
 	ExclusiveOrExpression ExpressionNode
 	InclusiveOrExpression ExpressionNode
@@ -3262,6 +3272,7 @@ func (n LogicalAndExpressionCase) String() string {
 type LogicalAndExpression struct {
 	typer
 	valuer
+	purer
 	Case                  LogicalAndExpressionCase `PrettyPrint:"stringer,zero"`
 	InclusiveOrExpression ExpressionNode
 	LogicalAndExpression  ExpressionNode
@@ -3324,6 +3335,7 @@ func (n LogicalOrExpressionCase) String() string {
 type LogicalOrExpression struct {
 	typer
 	valuer
+	purer
 	Case                 LogicalOrExpressionCase `PrettyPrint:"stringer,zero"`
 	LogicalAndExpression ExpressionNode
 	LogicalOrExpression  ExpressionNode
@@ -3394,6 +3406,7 @@ func (n MultiplicativeExpressionCase) String() string {
 type MultiplicativeExpression struct {
 	typer
 	valuer
+	purer
 	Case                     MultiplicativeExpressionCase `PrettyPrint:"stringer,zero"`
 	CastExpression           ExpressionNode
 	MultiplicativeExpression ExpressionNode
@@ -3693,7 +3706,8 @@ func (n PostfixExpressionCase) String() string {
 type PostfixExpression struct {
 	typer
 	valuer
-	field                  *Field
+	field *Field
+	purer
 	ArgumentExpressionList *ArgumentExpressionList
 	Case                   PostfixExpressionCase `PrettyPrint:"stringer,zero"`
 	ExpressionList         ExpressionNode
@@ -3859,6 +3873,7 @@ type PrimaryExpression struct {
 	resolvedTo Node
 	typer
 	valuer
+	purer
 	Case              PrimaryExpressionCase `PrettyPrint:"stringer,zero"`
 	CompoundStatement *CompoundStatement
 	ExpressionList    ExpressionNode
@@ -3947,6 +3962,7 @@ func (n RelationalExpressionCase) String() string {
 type RelationalExpression struct {
 	typer
 	valuer
+	purer
 	Case                 RelationalExpressionCase `PrettyPrint:"stringer,zero"`
 	RelationalExpression ExpressionNode
 	ShiftExpression      ExpressionNode
@@ -4116,6 +4132,7 @@ func (n ShiftExpressionCase) String() string {
 type ShiftExpression struct {
 	typer
 	valuer
+	purer
 	AdditiveExpression ExpressionNode
 	Case               ShiftExpressionCase `PrettyPrint:"stringer,zero"`
 	ShiftExpression    ExpressionNode
@@ -5170,6 +5187,7 @@ func (n UnaryExpressionCase) String() string {
 type UnaryExpression struct {
 	typer
 	valuer
+	purer
 	Case              UnaryExpressionCase `PrettyPrint:"stringer,zero"`
 	CastExpression    ExpressionNode
 	PostfixExpression ExpressionNode

@@ -138,6 +138,7 @@ package cc // import "modernc.org/cc/v4"
 			/*yy:field	resolvedTo	Node	*/
 			/*yy:field	typer			*/
 			/*yy:field	valuer			*/
+			/*yy:field	purer	*/
 			/*yy:example int i = x; */
 /*yy:case Ident      */
 			PrimaryExpression:
@@ -183,6 +184,7 @@ package cc // import "modernc.org/cc/v4"
 			/*yy:field	typer		*/
 			/*yy:field	valuer		*/
 			/*yy:field	field	*Field	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Primary    */ PostfixExpression:
 				PrimaryExpression
@@ -214,6 +216,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.3 Unary operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Postfix    */ UnaryExpression:
 				PostfixExpression
@@ -251,6 +254,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.4 Cast operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Unary      */ CastExpression:
 				UnaryExpression
@@ -260,6 +264,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.5 Multiplicative operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Cast       */ MultiplicativeExpression:
 				CastExpression
@@ -273,6 +278,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.6 Additive operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Mul        */ AdditiveExpression:
 				MultiplicativeExpression
@@ -284,6 +290,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.7 Bitwise shift operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Add        */ ShiftExpression:
 				AdditiveExpression
@@ -295,6 +302,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.8 Relational operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Shift      */ RelationalExpression:
 				ShiftExpression        
@@ -310,6 +318,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.9 Equality operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Rel        */ EqualityExpression:
 				RelationalExpression
@@ -321,6 +330,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.10 Bitwise AND operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Eq         */ AndExpression:
 				EqualityExpression
@@ -330,6 +340,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.11 Bitwise exclusive OR operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case And        */ ExclusiveOrExpression:
 				AndExpression
@@ -339,6 +350,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.12 Bitwise inclusive OR operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Xor        */ InclusiveOrExpression:
 				ExclusiveOrExpression
@@ -348,6 +360,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.13 Logical AND operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Or         */ LogicalAndExpression:
 				InclusiveOrExpression
@@ -357,6 +370,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.14 Logical OR operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case LAnd       */ LogicalOrExpression:
 				LogicalAndExpression
@@ -366,6 +380,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.15 Conditional operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*  yy:example int i = x; */
 			/*yy:example*/
 /*yy:case LOr        */ ConditionalExpression:
@@ -376,6 +391,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.16 Assignment operators */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example*/
 /*yy:case Cond       */ AssignmentExpression:
 				ConditionalExpression
@@ -405,6 +421,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.5.17 Comma operator */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example int f() { i = x; }; */
 /*yy:case Assign     */ ExpressionList:
 				AssignmentExpression
@@ -414,6 +431,7 @@ package cc // import "modernc.org/cc/v4"
 			/* [0], 6.6 Constant expressions */
 			/*yy:field	typer	*/
 			/*yy:field	valuer	*/
+			/*yy:field	purer	*/
 			/*yy:example struct { int i:3; }; */
 			ConstantExpression:
 				ConditionalExpression
