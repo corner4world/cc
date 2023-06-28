@@ -2423,6 +2423,7 @@ func IntegerPromotion(t Type) Type {
 // See also https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html
 type Attributes struct {
 	alias      string
+	aliasDecl  *Declarator
 	aligned    int64
 	vectorSize int64
 
@@ -2437,10 +2438,11 @@ func newAttributes() *Attributes {
 	}
 }
 
-func (n *Attributes) setAlias(v string)     { n.alias = v; n.isNonZero = true }
-func (n *Attributes) setAligned(v int64)    { n.aligned = v; n.isNonZero = true }
-func (n *Attributes) setVectorSize(v int64) { n.vectorSize = v; n.isNonZero = true }
-func (n *Attributes) setWeak()              { n.weak = true; n.isNonZero = true }
+func (n *Attributes) setAlias(v string)          { n.alias = v; n.isNonZero = true }
+func (n *Attributes) setAliasDecl(d *Declarator) { n.aliasDecl = d; n.isNonZero = true }
+func (n *Attributes) setAligned(v int64)         { n.aligned = v; n.isNonZero = true }
+func (n *Attributes) setVectorSize(v int64)      { n.vectorSize = v; n.isNonZero = true }
+func (n *Attributes) setWeak()                   { n.weak = true; n.isNonZero = true }
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	if n == nil {
@@ -2460,6 +2462,21 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	}
 
 	r = &Attributes{isNonZero: true}
+
+	switch {
+	case n.aliasDecl == nil && m.aliasDecl == nil:
+		// nop
+	case n.aliasDecl == nil && m.aliasDecl != nil:
+		r.aliasDecl = m.aliasDecl
+	case n.aliasDecl != nil && m.aliasDecl == nil:
+		r.aliasDecl = n.aliasDecl
+	default:
+		if n.aliasDecl != m.aliasDecl {
+			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+		}
+
+		r.aliasDecl = n.aliasDecl
+	}
 
 	switch {
 	case n.alias == "" && m.alias == "":
@@ -2514,8 +2531,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	return r, nil
 }
 
-// Alias returns S from __attribute__((alias("S"))) or "" if not present
+// Alias returns S from __attribute__((alias("S"))) or "" if not present.
 func (n *Attributes) Alias() string { return n.alias }
+
+// AliasDecl returns the declarator, if any, named in __attribute__((alias("S"))) or nil if not present.
+func (n *Attributes) AliasDecl() *Declarator { return n.aliasDecl }
 
 // Aligned returns N from __attribute__((aligned(N)) or -1 if not
 // present/valid.

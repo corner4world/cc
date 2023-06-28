@@ -2267,7 +2267,14 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 				return
 			}
 
-			attr.setAlias(strings.TrimRight(string(x), "\x00"))
+			nm := strings.TrimRight(string(x), "\x00")
+			attr.setAlias(nm)
+			if a := c.ast.Scope.Nodes[nm]; len(a) != 0 {
+				switch x := a[0].(type) {
+				case *Declarator:
+					attr.setAliasDecl(x)
+				}
+			}
 		case "aligned":
 			e := n.ArgumentExpressionList.AssignmentExpression
 			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
