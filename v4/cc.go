@@ -61,6 +61,8 @@ typedef void *__builtin_va_list;
 #define __builtin_va_arg(va, type) (*(type*)__builtin_va_arg_impl(va))
 #endif
 
+#define __builtin_va_copy(dst, src) dst = src
+
 #define __builtin_offsetof(type, member) ((__SIZE_TYPE__)&(((type*)0)->member))
 #define __builtin_types_compatible_p(t1, t2) __builtin_types_compatible_p_impl((t1)0, (t2)0)
 
