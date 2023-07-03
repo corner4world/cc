@@ -1770,7 +1770,7 @@ func TestMake(t *testing.T) {
 	case "netbsd":
 		cfg.cflags = "-I/usr/pkg/include"
 	}
-	cfg.cflags = strings.TrimSpace(cfg.cflags + LongDouble64Flag(goos, goarch))
+	cfg.cflags = strings.TrimSpace(cfg.cflags)
 	for _, v := range []struct {
 		archive string
 		dir     string
@@ -1793,7 +1793,7 @@ func TestMake(t *testing.T) {
 		{"git.postgresql.org/git/postgresql.tar.gz", "postgresql", cfg, all},
 		{"www.lua.org/ftp/lua-5.4.4.tar.gz", "lua-5.4.4", cfg.noConfigure(), all},
 	} {
-		if !filter(v.filter) {
+		if !filter(v.filter) || re != nil && !re.MatchString(v.archive) {
 			continue
 		}
 
