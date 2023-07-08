@@ -1192,6 +1192,10 @@ type StructType struct {
 }
 
 func (c *ctx) newStructType(scope *Scope, tag Token, fields []*Field, size int64, align int, attr *Attributes) (r *StructType) {
+	defer func() {
+		c.ast.Structs[r] = struct{}{}
+	}()
+
 	r = &StructType{c: c, structType: structType{tag: tag, fields: fields, size: size, align: align, scope: scope}}
 	if attr != nil {
 		return r.setAttr(attr).(*StructType)
@@ -1481,8 +1485,12 @@ type UnionType struct {
 	vectorSizer
 }
 
-func (c *ctx) newUnionType(scope *Scope, tag Token, fields []*Field, size int64, align int, attr *Attributes) *UnionType {
-	r := &UnionType{c: c, structType: structType{tag: tag, fields: fields, size: size, align: align, isUnion: true, scope: scope}}
+func (c *ctx) newUnionType(scope *Scope, tag Token, fields []*Field, size int64, align int, attr *Attributes) (r *UnionType) {
+	defer func() {
+		c.ast.Unions[r] = struct{}{}
+	}()
+
+	r = &UnionType{c: c, structType: structType{tag: tag, fields: fields, size: size, align: align, isUnion: true, scope: scope}}
 	if attr != nil {
 		return r.setAttr(attr).(*UnionType)
 	}

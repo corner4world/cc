@@ -542,11 +542,15 @@ type resolver struct{ resolved *Scope }
 func (n resolver) ResolvedIn() *Scope { return n.resolved }
 
 type AST struct {
-	ABI             *ABI
-	EOF             Token
-	Macros          map[string]*Macro
-	Scope           *Scope // File scope.
+	ABI    *ABI
+	EOF    Token
+	Macros map[string]*Macro
+	Scope  *Scope // File scope.
+	// All struct types created during type checking.
+	Structs         map[*StructType]struct{}
 	TranslationUnit *TranslationUnit
+	// All union types created during type checking.
+	Unions map[*UnionType]struct{}
 
 	// These field are valid only after Translate
 	Char       Type
@@ -572,6 +576,8 @@ type AST struct {
 }
 
 func (n *AST) check(cfg *Config) error {
+	n.Structs = map[*StructType]struct{}{}
+	n.Unions = map[*UnionType]struct{}{}
 	c := newCtx(n, cfg)
 
 	defer func() { c.cfg = nil }()
