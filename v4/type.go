@@ -1877,6 +1877,9 @@ func (n *ArrayType) Size() int64 {
 	return -1
 }
 
+// SizeExpression returns the expression determining the number of elements in 'n', if available.
+func (n *ArrayType) SizeExpression() ExpressionNode { return n.expr }
+
 // String implements Type.
 func (n *ArrayType) String() string { return n.str(&strings.Builder{}, false).String() }
 
