@@ -588,6 +588,23 @@ func (n *AST) check(cfg *Config) error {
 	c.fixSyntheticDeclarators(n.Scope)
 	c.checkScope(n.Scope)
 	n.SizeT = c.sizeT(n.EOF)
+	if n.predefinedDeclarator0 != nil {
+		// Remove __predefined_declarator
+		var prev *TranslationUnit
+	loop:
+		for l := n.TranslationUnit; l != nil; l = l.TranslationUnit {
+			switch ed := l.ExternalDeclaration; ed.Case {
+			case ExternalDeclarationDecl:
+				if d := ed.Declaration.InitDeclaratorList.InitDeclarator.Declarator; d == n.predefinedDeclarator0 {
+					if prev != nil {
+						prev.TranslationUnit = l.TranslationUnit
+					}
+					break loop
+				}
+			}
+			prev = l
+		}
+	}
 	return c.errors.err()
 }
 
