@@ -2355,6 +2355,28 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 
 			attr.setVectorSize(v)
 			c.usesVectors = true
+		case "visibility":
+			e := n.ArgumentExpressionList.AssignmentExpression
+			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
+				c.errors.add(errorf("%v: expected one expression", e.Position()))
+				break
+			}
+
+			x, ok := e.Value().(StringValue)
+			if !ok {
+				c.errors.add(errorf("%v: expected a string literal", e.Position()))
+				return
+			}
+
+			nm := strings.TrimRight(string(x), "\x00")
+			var d *Declarator
+			if a := c.ast.Scope.Nodes[nm]; len(a) != 0 {
+				switch x := a[0].(type) {
+				case *Declarator:
+					d = x
+				}
+			}
+			attr.setVisibility(nm, d)
 		}
 	default:
 		c.errors.add(errorf("internal error: %v", n.Case))

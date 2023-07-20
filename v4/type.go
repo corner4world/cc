@@ -2433,10 +2433,12 @@ func IntegerPromotion(t Type) Type {
 //
 // See also https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html
 type Attributes struct {
-	alias      string
-	aliasDecl  *Declarator
-	aligned    int64
-	vectorSize int64
+	alias          string
+	aliasDecl      *Declarator
+	aligned        int64
+	vectorSize     int64
+	visibility     string
+	visibilityDecl *Declarator
 
 	isNonZero bool
 	weak      bool
@@ -2454,6 +2456,12 @@ func (n *Attributes) setAliasDecl(d *Declarator) { n.aliasDecl = d; n.isNonZero 
 func (n *Attributes) setAligned(v int64)         { n.aligned = v; n.isNonZero = true }
 func (n *Attributes) setVectorSize(v int64)      { n.vectorSize = v; n.isNonZero = true }
 func (n *Attributes) setWeak()                   { n.weak = true; n.isNonZero = true }
+
+func (n *Attributes) setVisibility(s string, d *Declarator) {
+	n.visibility = s
+	n.visibilityDecl = d
+	n.isNonZero = true
+}
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	if n == nil {
@@ -2535,6 +2543,36 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	}
 
 	switch {
+	case n.visibilityDecl == nil && m.visibilityDecl == nil:
+		// nop
+	case n.visibilityDecl == nil && m.visibilityDecl != nil:
+		r.visibilityDecl = m.visibilityDecl
+	case n.visibilityDecl != nil && m.visibilityDecl == nil:
+		r.visibilityDecl = n.visibilityDecl
+	default:
+		if n.visibilityDecl != m.visibilityDecl {
+			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+		}
+
+		r.visibilityDecl = n.visibilityDecl
+	}
+
+	switch {
+	case n.visibility == "" && m.visibility == "":
+		// nop
+	case n.visibility == "" && m.visibility != "":
+		r.visibility = m.visibility
+	case n.visibility != "" && m.visibility == "":
+		r.visibility = n.visibility
+	default:
+		if n.visibility != m.visibility {
+			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+		}
+
+		r.visibility = n.visibility
+	}
+
+	switch {
 	case n.weak || m.weak:
 		r.weak = true
 	}
@@ -2559,7 +2597,13 @@ func (n *Attributes) Aligned() int64 { return n.aligned }
 // scalars, otherwise it's ignored.
 func (n *Attributes) VectorSize() int64 { return n.vectorSize }
 
-// Weak reports 'weak', as in __attribute__((weak, alias("S"))), is present.
+// Visibility returns S from __attribute__((visibility("S"))) or "" if not present.
+func (n *Attributes) Visibility() string { return n.visibility }
+
+// VisibilityDecl returns the declarator, if any, named in __attribute__((visibility("S"))) or nil if not present.
+func (n *Attributes) VisibilityDecl() *Declarator { return n.visibilityDecl }
+
+// Weak reports whether 'weak', as in __attribute__((weak, alias("S"))), is present.
 func (n *Attributes) Weak() bool { return n.weak }
 
 type attributer struct{ p *Attributes }
