@@ -398,7 +398,7 @@ func (n *PredefinedType) VectorSize() int64 {
 func (n *PredefinedType) setAttr(a *Attributes) Type {
 	var vec *ArrayType
 	if sz := a.VectorSize(); sz > 0 {
-		vec = n.c.newArrayType(n, sz/n.Size(), nil)
+		vec = n.c.newArrayType(n, sz, nil)
 	}
 	m := *n
 	m.vector = vec
