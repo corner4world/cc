@@ -1181,7 +1181,7 @@ func (n *structType) collectFields(m map[string][]*Field, parent *Field, depth i
 }
 
 type StructType struct {
-	attr    attributer
+	attrs   *Attributes
 	c       *ctx
 	forward *StructOrUnionSpecifier
 	namer
@@ -1263,20 +1263,17 @@ func (n *StructType) Tag() Token { return n.tag }
 // Attributes implemets Type.
 func (n *StructType) Attributes() *Attributes {
 	if n.forward != nil {
-		return n.forward.Type().Attributes()
+		a, _ := n.forward.Type().Attributes().merge(nil, n.attrs)
+		return a
 	}
 
-	return n.attr.p
+	return n.attrs
 }
 
 // setAttr implements Type.
 func (n *StructType) setAttr(a *Attributes) Type {
-	if n.forward != nil {
-		return n.forward.Type().setAttr(a)
-	}
-
 	m := *n
-	m.attr.p = a
+	m.attrs, _ = n.Attributes().merge(nil, a)
 	return &m
 }
 
@@ -1366,8 +1363,8 @@ func (n *StructType) Align() int {
 		return n.forward.Type().Align()
 	}
 
-	if n.attr.p != nil {
-		if v := n.attr.p.Aligned(); v > 0 {
+	if n.attrs != nil {
+		if v := n.attrs.Aligned(); v > 0 {
 			return int(v)
 		}
 	}
@@ -1475,7 +1472,7 @@ func (n *StructType) str(b *strings.Builder, useTag bool) *strings.Builder {
 }
 
 type UnionType struct {
-	attr    attributer
+	attrs   *Attributes
 	c       *ctx
 	forward *StructOrUnionSpecifier
 	namer
@@ -1525,20 +1522,17 @@ func (n *UnionType) Tag() Token { return n.tag }
 // Attributes implemets Type.
 func (n *UnionType) Attributes() *Attributes {
 	if n.forward != nil {
-		return n.forward.Type().Attributes()
+		a, _ := n.forward.Type().Attributes().merge(nil, n.attrs)
+		return a
 	}
 
-	return n.attr.p
+	return n.attrs
 }
 
 // setAttr implements Type.
 func (n *UnionType) setAttr(a *Attributes) Type {
-	if n.forward != nil {
-		return n.forward.Type().setAttr(a)
-	}
-
 	m := *n
-	m.attr.p = a
+	m.attrs, _ = n.Attributes().merge(nil, a)
 	return &m
 }
 
@@ -1628,8 +1622,8 @@ func (n *UnionType) Align() int {
 		return n.forward.Type().Align()
 	}
 
-	if n.attr.p != nil {
-		if v := n.attr.p.Aligned(); v > 0 {
+	if n.attrs != nil {
+		if v := n.attrs.Aligned(); v > 0 {
 			return int(v)
 		}
 	}
@@ -2451,17 +2445,13 @@ func newAttributes() *Attributes {
 	}
 }
 
-func (n *Attributes) setAlias(v string)          { n.alias = v; n.isNonZero = true }
-func (n *Attributes) setAliasDecl(d *Declarator) { n.aliasDecl = d; n.isNonZero = true }
-func (n *Attributes) setAligned(v int64)         { n.aligned = v; n.isNonZero = true }
-func (n *Attributes) setVectorSize(v int64)      { n.vectorSize = v; n.isNonZero = true }
-func (n *Attributes) setWeak()                   { n.weak = true; n.isNonZero = true }
-
-func (n *Attributes) setVisibility(s string, d *Declarator) {
-	n.visibility = s
-	n.visibilityDecl = d
-	n.isNonZero = true
-}
+func (n *Attributes) setAlias(v string)               { n.alias = v; n.isNonZero = true }
+func (n *Attributes) setAliasDecl(d *Declarator)      { n.aliasDecl = d; n.isNonZero = true }
+func (n *Attributes) setAligned(v int64)              { n.aligned = v; n.isNonZero = true }
+func (n *Attributes) setVectorSize(v int64)           { n.vectorSize = v; n.isNonZero = true }
+func (n *Attributes) setVisibility(s string)          { n.visibility = s; n.isNonZero = true }
+func (n *Attributes) setVisibilityDecl(d *Declarator) { n.visibilityDecl = d; n.isNonZero = true }
+func (n *Attributes) setWeak()                        { n.weak = true; n.isNonZero = true }
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	if n == nil {

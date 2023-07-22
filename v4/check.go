@@ -713,6 +713,18 @@ func (n *AsmQualifier) check(c *ctx) {
 func (n *FunctionDefinition) check(c *ctx) {
 	t := c.checkFunctionDefinition(n.scope, n.DeclarationSpecifiers, n.Declarator, n.DeclarationList, n.CompoundStatement)
 	if ft, ok := t.(*FunctionType); ok {
+		if n.DeclarationSpecifiers != nil {
+			if t := n.DeclarationSpecifiers.Type(); t != nil {
+				if a := t.Attributes(); a != nil {
+					ft = ft.setAttr(a).(*FunctionType)
+					n.Declarator.typ = ft
+					if s := a.Visibility(); s != "" {
+						a.setVisibilityDecl(n.Declarator)
+					}
+				}
+			}
+		}
+
 		if c.usesVectors {
 			n.usesVectors = true
 			return
@@ -1065,18 +1077,27 @@ func (n *Declaration) check(c *ctx) {
 	case DeclarationDecl: // DeclarationSpecifiers InitDeclaratorList AttributeSpecifierList ';'
 		var isExtern, isStatic, isAtomic, isThreadLocal, isConst, isVolatile, isInline, isRegister, isAuto, isNoreturn, isRestrict bool
 		var alignas int
+		var err error
 		t := n.DeclarationSpecifiers.check(c, &isExtern, &isStatic, &isAtomic, &isThreadLocal, &isConst, &isVolatile, &isInline, &isRegister, &isAuto, &isNoreturn, &isRestrict, &alignas)
-		if attr := n.AttributeSpecifierList.check(c); attr != nil {
-			for l := n.InitDeclaratorList; l != nil; l = l.InitDeclaratorList {
-				d := l.InitDeclarator.Declarator
-				var err error
-				if d.typ, err = mergeAttr(d.Type(), attr); err != nil {
+		attr := n.AttributeSpecifierList.check(c)
+		if t != nil {
+			if a := t.Attributes(); a != nil {
+				if attr, err = attr.merge(n, a); err != nil {
 					c.errors.add(errorf("%v", err))
 				}
 			}
 		}
 		for l := n.InitDeclaratorList; l != nil; l = l.InitDeclaratorList {
 			l.InitDeclarator.check(c, t, isExtern, isStatic, isAtomic, isThreadLocal, isConst, isVolatile, isInline, isRegister, isAuto, alignas)
+			d := l.InitDeclarator.Declarator
+			if d != nil && d.Type() != nil && attr != nil {
+				if d.typ, err = mergeAttr(d.Type(), attr); err != nil {
+					c.errors.add(errorf("%v", err))
+				}
+				if s := d.Type().Attributes().Visibility(); s != "" {
+					d.Type().Attributes().setVisibilityDecl(d)
+				}
+			}
 		}
 	case DeclarationAssert: // StaticAssertDeclaration
 		n.StaticAssertDeclaration.check(c)
@@ -2298,7 +2319,10 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 					attr.setAliasDecl(x)
 				}
 			}
-		case "aligned":
+		case
+			"__aligned__",
+			"aligned":
+
 			e := n.ArgumentExpressionList.AssignmentExpression
 			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
 				c.errors.add(errorf("%v: expected one expression", e.Position()))
@@ -2355,7 +2379,10 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 
 			attr.setVectorSize(v)
 			c.usesVectors = true
-		case "visibility":
+		case
+			"__visibility__",
+			"visibility":
+
 			e := n.ArgumentExpressionList.AssignmentExpression
 			if n.ArgumentExpressionList.ArgumentExpressionList != nil {
 				c.errors.add(errorf("%v: expected one expression", e.Position()))
@@ -2369,14 +2396,7 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 			}
 
 			nm := strings.TrimRight(string(x), "\x00")
-			var d *Declarator
-			if a := c.ast.Scope.Nodes[nm]; len(a) != 0 {
-				switch x := a[0].(type) {
-				case *Declarator:
-					d = x
-				}
-			}
-			attr.setVisibility(nm, d)
+			attr.setVisibility(nm)
 		}
 	default:
 		c.errors.add(errorf("internal error: %v", n.Case))
