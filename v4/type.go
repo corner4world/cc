@@ -2481,7 +2481,7 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.aliasDecl = n.aliasDecl
 	default:
 		if n.aliasDecl != m.aliasDecl {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+			return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
 		}
 
 		r.aliasDecl = n.aliasDecl
@@ -2496,7 +2496,7 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.alias = n.alias
 	default:
 		if n.alias != m.alias {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+			return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
 		}
 
 		r.alias = n.alias
@@ -2511,7 +2511,7 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.aligned = n.aligned
 	default:
 		if n.aligned != m.aligned {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+			return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
 		}
 
 		r.aligned = n.aligned
@@ -2526,7 +2526,7 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.vectorSize = n.vectorSize
 	default:
 		if n.vectorSize != m.vectorSize {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+			return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
 		}
 
 		r.vectorSize = n.vectorSize
@@ -2540,11 +2540,12 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	case n.visibilityDecl != nil && m.visibilityDecl == nil:
 		r.visibilityDecl = n.visibilityDecl
 	default:
-		if n.visibilityDecl != m.visibilityDecl {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+		switch {
+		case n.visibilityDecl.NameTok().seq <= m.visibilityDecl.NameTok().seq:
+			r.visibilityDecl = n.visibilityDecl
+		default:
+			r.visibilityDecl = m.visibilityDecl
 		}
-
-		r.visibilityDecl = n.visibilityDecl
 	}
 
 	switch {
@@ -2556,7 +2557,7 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.visibility = n.visibility
 	default:
 		if n.visibility != m.visibility {
-			return nil, fmt.Errorf("%v: conflicting attributes", nd.Position())
+			return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
 		}
 
 		r.visibility = n.visibility

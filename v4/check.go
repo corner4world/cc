@@ -297,7 +297,7 @@ func (c *ctx) checkScope(s *Scope) {
 				for _, v := range ds {
 					var err error
 					if t, err = mergeAttr(t, v.Type().Attributes()); err != nil {
-						c.errors.add(errorf("%v: %v", v.Position()))
+						c.errors.add(errorf("%v: %v", v.Position(), err))
 					}
 				}
 				for _, v := range ds {
@@ -718,7 +718,7 @@ func (n *FunctionDefinition) check(c *ctx) {
 				if a := t.Attributes(); a != nil {
 					ft = ft.setAttr(a).(*FunctionType)
 					n.Declarator.typ = ft
-					if s := a.Visibility(); s != "" {
+					if s := a.Visibility(); s != "" && a.VisibilityDecl() == nil {
 						a.setVisibilityDecl(n.Declarator)
 					}
 				}
@@ -1094,7 +1094,7 @@ func (n *Declaration) check(c *ctx) {
 				if d.typ, err = mergeAttr(d.Type(), attr); err != nil {
 					c.errors.add(errorf("%v", err))
 				}
-				if s := d.Type().Attributes().Visibility(); s != "" {
+				if s := d.Type().Attributes().Visibility(); s != "" && d.Type().Attributes().VisibilityDecl() == nil {
 					d.Type().Attributes().setVisibilityDecl(d)
 				}
 			}
@@ -1174,9 +1174,8 @@ func (n *InitDeclarator) check(c *ctx, t Type, isExtern, isStatic, isAtomic, isT
 
 // Initializer:
 //
-//	AssignmentExpression         // Case InitializerExpr
-//
-// |       '{' InitializerList ',' '}'  // Case InitializerInitList
+//		AssignmentExpression         // Case InitializerExpr
+//	|       '{' InitializerList ',' '}'  // Case InitializerInitList
 func (n *Initializer) check(c *ctx, currObj, t Type, off int64, l *InitializerList, f *Field) (r *InitializerList) {
 	if n == nil || t == nil {
 		c.errors.add(errorf("internal error %T(%v) %T(%v)", n, n == nil, t, t == nil))
@@ -1187,6 +1186,7 @@ func (n *Initializer) check(c *ctx, currObj, t Type, off int64, l *InitializerLi
 	// if f != nil {
 	// 	fs = fmt.Sprintf(" (FIELD %q: type %v, off %v '%s')", f.Name(), f.Type(), f.Offset(), NodeSource(n.AssignmentExpression))
 	// }
+	// trc("==== (%v: %v: %v:)", origin(4), origin(3), origin(2))
 	// trc("%sINITIALIZER (A) %v: t %s, off %v, l %p, f %s (n %q, l %q)", c.indentInc(), n.Position(), t, off, l, fs, NodeSource(n), NodeSource(l))
 	// defer func() {
 	// 	trc("%sEXIT INITIALIZER (Z) %v: t %s, off %v, l %p, f %p (n %q, r -> %q)", c.indentDec(), n.Position(), t, off, l, f, NodeSource(n), NodeSource(r))
@@ -1249,6 +1249,29 @@ func (n *Initializer) check(c *ctx, currObj, t Type, off int64, l *InitializerLi
 		if n.InitializerList == nil {
 			n.val = Zero
 			return r
+		}
+
+		if n.InitializerList.InitializerList == nil {
+			switch x := t.(type) {
+			case *ArrayType:
+				switch x.Elem().Kind() {
+				case Char, SChar, UChar:
+					e := n.InitializerList.Initializer.AssignmentExpression
+					exprT := e.check(c, decay)
+					if exprT == Invalid {
+						n.val = Unknown
+						c.errors.add(errorf("TODO %T <- %T", t, exprT))
+						return
+					}
+
+					val := e.eval(c, decay)
+					switch val.(type) {
+					case StringValue:
+						n.InitializerList.Initializer.check(c, t, t, off, l, f)
+						return r
+					}
+				}
+			}
 		}
 
 		if n := n.InitializerList.check(c, t, t, off); n != nil {
