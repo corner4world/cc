@@ -3121,8 +3121,14 @@ func (n *StructDeclarationList) checkStruct(c *ctx, a *fieldAllocator, s []*Fiel
 	defer a.close()
 
 	for i, f := range s {
-		if ft := f.Type(); (ft.IsIncomplete() || ft.Size() == 0) && ft.Kind() == Array && i == len(s)-1 { // https://en.wikipedia.org/wiki/Flexible_array_member
-			f.isFlexibleArrayMember = true
+		if ft := f.Type(); (ft.IsIncomplete() || ft.Size() == 0) &&
+			ft.Kind() == Array && i == len(s)-1 { // https://en.wikipedia.org/wiki/Flexible_array_member
+			switch x := ft.(type) {
+			case *ArrayType:
+				f.isFlexibleArrayMember = !x.IsVLA()
+			default:
+				f.isFlexibleArrayMember = true
+			}
 		}
 
 		switch {
