@@ -2943,6 +2943,10 @@ func (c *cpp) group(src Source) (group, error) {
 		return g, nil
 	}
 
+	if src.FS == nil {
+		src.FS = c.cfg.FS
+	}
+
 	p, err := newCppParser(c.fset, src, c.eh)
 	if err != nil {
 		return nil, err
