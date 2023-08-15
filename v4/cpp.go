@@ -1733,7 +1733,7 @@ func (c *cpp) include(ln controlLine) {
 	case strings.HasPrefix(raw, `"`) && strings.HasSuffix(raw, `"`):
 		nm := raw[1 : len(raw)-1]
 		for _, v := range c.cfg.IncludePaths {
-			if v == "" {
+			if v == "" || v == "@" {
 				v, _ = filepath.Split(ln[2].Position().Filename)
 				v = filepath.Clean(v)
 			}

@@ -574,8 +574,8 @@ type Source struct {
 //
 // Search paths listed in IncludePaths and SysIncludePaths are used to resolve
 // #include "foo.h" and #include <foo.h> preprocessing directives respectively.
-// A special search path "@" is interpreted as 'the same directory as where the
-// file with the #include directive is'.
+// A special search path "@" or "" is interpreted as 'the same directory as
+// where the file with the #include "foo" directive is'.
 //
 // If FS is nil, os.Open is used to open named files.
 type Config struct {
