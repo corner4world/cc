@@ -611,10 +611,9 @@ func (n *AST) check(cfg *Config) error {
 // ExternalDeclaration:
 //
 //	FunctionDefinition  // Case ExternalDeclarationFuncDef
-//
-// |       Declaration         // Case ExternalDeclarationDecl
-// |       AsmStatement        // Case ExternalDeclarationAsmStmt
-// |       ';'                 // Case ExternalDeclarationEmpty
+//	|       Declaration         // Case ExternalDeclarationDecl
+//	|       AsmStatement        // Case ExternalDeclarationAsmStmt
+//	|       ';'                 // Case ExternalDeclarationEmpty
 func (n *ExternalDeclaration) check(c *ctx) {
 	switch n.Case {
 	case ExternalDeclarationFuncDef: // FunctionDefinition
@@ -1098,6 +1097,7 @@ func (n *Declaration) check(c *ctx) {
 					d.Type().Attributes().setVisibilityDecl(d)
 				}
 			}
+			d.fixVolatile()
 		}
 	case DeclarationAssert: // StaticAssertDeclaration
 		n.StaticAssertDeclaration.check(c)
@@ -1927,6 +1927,24 @@ func (n *Declarator) check(c *ctx, t Type) (r Type) {
 	return n.Type()
 }
 
+func (n *Declarator) fixVolatile() {
+	switch {
+	case n.IsVolatile() && n.Pointer != nil && !n.Pointer.TypeQualifiers.isVolatile():
+		// volatile int *p;
+		n.isVolatile = false
+		pt := n.Type().(*PointerType)
+		pt.attributer.p.isVolatile = false
+		el := pt.Elem()
+		attr := volatileAttr(el.Attributes(), true)
+		el.setAttr(attr)
+	case !n.IsVolatile() && n.Pointer != nil && n.Pointer.TypeQualifiers.isVolatile():
+		// int *volatile p;
+		n.isVolatile = true
+		attr := volatileAttr(n.Type().Attributes(), true)
+		n.typ, _ = mergeAttr(n.Type(), attr)
+	}
+}
+
 // DirectDeclarator:
 //
 //	IDENTIFIER                                                             // Case DirectDeclaratorIdent
@@ -2167,6 +2185,18 @@ func ts2String(a []TypeSpecifierCase) string {
 	return b.String()
 }
 
+func volatileAttr(attr *Attributes, isVolatile bool) *Attributes {
+	if !isVolatile {
+		return attr
+	}
+
+	if attr == nil {
+		attr = &Attributes{}
+	}
+	attr.setIsVolatile(true)
+	return attr
+}
+
 // DeclarationSpecifiers:
 //
 //	StorageClassSpecifier DeclarationSpecifiers  // Case DeclarationSpecifiersStorage
@@ -2196,6 +2226,7 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			c.errors.add(errorf("%s not supported on %s/%s", r, c.ast.ABI.goos, c.ast.ABI.goarch))
 			r = Invalid
 		}
+		attr = volatileAttr(attr, *isVolatile)
 		if attr != nil {
 			var err error
 			if r, err = mergeAttr(r, attr); err != nil {
@@ -2212,7 +2243,7 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			n.StorageClassSpecifier.check(c, isExtern, isStatic, isThreadLocal, isRegister, isAuto)
 		case DeclarationSpecifiersTypeSpec: // TypeSpecifier DeclarationSpecifiers
 			ts = append(ts, n.TypeSpecifier.Case)
-			r = n.TypeSpecifier.check(c, isAtomic)
+			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile)
 		case DeclarationSpecifiersTypeQual: // TypeQualifier DeclarationSpecifiers
 			if attr := n.TypeQualifier.check(c, isConst, isVolatile, isAtomic, isRestrict); attr != nil {
 				attrs = append(attrs, attr)
@@ -2569,7 +2600,7 @@ func (n *StorageClassSpecifier) check(c *ctx, isExtern, isStatic, isThreadLocal,
 // |       "_Float64"                       // Case TypeSpecifierFloat64
 // |       "_Float32x"                      // Case TypeSpecifierFloat32x
 // |       "_Float64x"                      // Case TypeSpecifierFloat64x
-func (n *TypeSpecifier) check(c *ctx, isAtomic *bool) (r Type) {
+func (n *TypeSpecifier) check(c *ctx, isAtomic *bool, isVolatile bool) (r Type) {
 	if n == nil {
 		return Invalid
 	}
@@ -2616,7 +2647,7 @@ func (n *TypeSpecifier) check(c *ctx, isAtomic *bool) (r Type) {
 	case TypeSpecifierImaginary: // "_Imaginary"
 		c.errors.add(errorf("TODO %v", n.Case))
 	case TypeSpecifierStructOrUnion: // StructOrUnionSpecifier
-		return n.StructOrUnionSpecifier.check(c)
+		return n.StructOrUnionSpecifier.check(c, isVolatile)
 	case TypeSpecifierEnum: // EnumSpecifier
 		return n.EnumSpecifier.check(c)
 	case TypeSpecifierTypeName: // TYPENAME
@@ -2768,7 +2799,7 @@ func (n *Enumerator) check(c *ctx, iota int64) int64 {
 //	StructOrUnion IDENTIFIER '{' StructDeclarationList '}'  // Case StructOrUnionSpecifierDef
 //
 // |       StructOrUnion IDENTIFIER                                // Case StructOrUnionSpecifierTag
-func (n *StructOrUnionSpecifier) check(c *ctx) (r Type) {
+func (n *StructOrUnionSpecifier) check(c *ctx, isVolatile bool) (r Type) {
 	if n == nil {
 		return Invalid
 	}
@@ -2797,7 +2828,7 @@ func (n *StructOrUnionSpecifier) check(c *ctx) (r Type) {
 			n.typ = c.newStructType(n.LexicalScope(), tag, nil, -1, 1, attr)
 		}
 
-		n.StructDeclarationList.check(c, n)
+		n.StructDeclarationList.check(c, n, isVolatile)
 	case StructOrUnionSpecifierTag: // StructOrUnion IDENTIFIER
 		if x := n.LexicalScope().structOrUnion(n.Token); x != nil {
 			if n.StructOrUnion.Case != x.StructOrUnion.Case {
@@ -2845,7 +2876,7 @@ func (n *StructOrUnionSpecifier) check(c *ctx) (r Type) {
 //	StructDeclaration
 //
 // |       StructDeclarationList StructDeclaration
-func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier) {
+func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier, isVolatile bool) {
 	defer func() {
 		if s.typ == nil || s.typ == Invalid {
 			c.errors.add(errorf("TODO %T missed/failed type check", n))
@@ -2856,7 +2887,7 @@ func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier) {
 	// defer trc("==== (Z) %v: %s", n.Position(), NodeSource(n))
 	var fields []*Field
 	for l := n; l != nil; l = l.StructDeclarationList {
-		fields = append(fields, l.StructDeclaration.check(c)...)
+		fields = append(fields, l.StructDeclaration.check(c, isVolatile)...)
 	}
 	for i, f := range fields {
 		f.index = i
@@ -3140,11 +3171,12 @@ func (n *StructDeclarationList) checkStruct(c *ctx, a *fieldAllocator, s []*Fiel
 	}
 }
 
-func (n *StructDeclaration) check(c *ctx) (r []*Field) {
+func (n *StructDeclaration) check(c *ctx, isVolatile0 bool) (r []*Field) {
 	switch n.Case {
 	case StructDeclarationDecl: // DeclarationSpecifiers InitDeclaratorList AttributeSpecifierList ';'
 		var isAtomic, isConst, isVolatile, isRestrict bool
 		var alignas int
+		isVolatile = isVolatile0
 		t := n.SpecifierQualifierList.check(c, &isAtomic, &isConst, &isVolatile, &isRestrict, &alignas)
 		switch {
 		case n.StructDeclaratorList == nil:
@@ -3203,7 +3235,7 @@ func (n *SpecifierQualifierList) check(c *ctx, isAtomic, isConst, isVolatile, is
 		switch n.Case {
 		case SpecifierQualifierListTypeSpec: // TypeSpecifier SpecifierQualifierList
 			ts = append(ts, n.TypeSpecifier.Case)
-			r = n.TypeSpecifier.check(c, isAtomic)
+			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile)
 		case SpecifierQualifierListTypeQual: // TypeQualifier SpecifierQualifierList
 			if attr := n.TypeQualifier.check(c, isConst, isVolatile, isAtomic, isRestrict); attr != nil {
 				attrs = append(attrs, attr)

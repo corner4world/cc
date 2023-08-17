@@ -260,3 +260,13 @@ func (n *JumpStatement) Label() Node { return n.label }
 
 // UsesVectors reports whether n uses any vector type.
 func (n *FunctionDefinition) UsesVectors() bool { return n.usesVectors }
+
+func (n *TypeQualifiers) isVolatile() bool {
+	for ; n != nil; n = n.TypeQualifiers {
+		switch n.TypeQualifier.Case {
+		case TypeQualifierVolatile:
+			return true
+		}
+	}
+	return false
+}

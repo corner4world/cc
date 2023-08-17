@@ -2259,10 +2259,159 @@ func TestIssue149(t *testing.T) {
 		{Name: "test.h", Value: src},
 	}
 
-	ast, err := Parse(cfg, sources)
+	if _, err := Parse(cfg, sources); err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+}
+
+func TestVolatile0(t *testing.T) {
+	const src = "int i;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
 	if err != nil {
 		t.Fatalf("parse error: %v", err)
 	}
 
-	t.Logf("\n%s", ast.TranslationUnit)
+	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	if g, e := d.IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestVolatile1(t *testing.T) {
+	const src = "volatile int i;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	if g, e := d.IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestVolatile2(t *testing.T) {
+	const src = "volatile int *p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	if g, e := d.IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestVolatile3(t *testing.T) {
+	const src = "int * volatile p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	if g, e := d.IsVolatile(), true; g != e {
+		t.Error(g, e) //TODO
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e) //TODO
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestVolatile4(t *testing.T) {
+	const src = "volatile int * volatile p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	if g, e := d.IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
 }

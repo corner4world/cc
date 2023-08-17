@@ -777,6 +777,12 @@ func (n *PointerType) Pointer() Type {
 }
 
 func (c *ctx) newPointerType(elem Type) (r *PointerType) {
+	attr := elem.Attributes()
+	if attr != nil {
+		a2 := *attr
+		a2.isVolatile = false
+		elem, _ = mergeAttr(elem, &a2)
+	}
 	r = &PointerType{c: c, elem: newTyper(elem)}
 	r.undecay = r
 	return r
@@ -2423,7 +2429,8 @@ func IntegerPromotion(t Type) Type {
 	}
 }
 
-// Attributes represent selected values from __attribute__ constructs.
+// Attributes represent selected values from __attribute__ constructs,
+// qualifiers etc.
 //
 // See also https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html
 type Attributes struct {
@@ -2434,8 +2441,9 @@ type Attributes struct {
 	visibility     string
 	visibilityDecl *Declarator
 
-	isNonZero bool
-	weak      bool
+	isNonZero  bool
+	isVolatile bool
+	weak       bool
 }
 
 func newAttributes() *Attributes {
@@ -2452,6 +2460,11 @@ func (n *Attributes) setVectorSize(v int64)           { n.vectorSize = v; n.isNo
 func (n *Attributes) setVisibility(s string)          { n.visibility = s; n.isNonZero = true }
 func (n *Attributes) setVisibilityDecl(d *Declarator) { n.visibilityDecl = d; n.isNonZero = true }
 func (n *Attributes) setWeak()                        { n.weak = true; n.isNonZero = true }
+
+func (n *Attributes) setIsVolatile(v bool) {
+	v, n.isVolatile = n.isVolatile, v
+	n.isNonZero = v != n.isVolatile
+}
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	if n == nil {
@@ -2568,8 +2581,16 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.weak = true
 	}
 
+	switch {
+	case n.isVolatile || m.isVolatile:
+		r.isVolatile = true
+	}
+
 	return r, nil
 }
+
+// IsVolatile reports if a type is qualified by the 'volatile' keyword.
+func (n *Attributes) IsVolatile() bool { return n != nil && n.isVolatile }
 
 // Alias returns S from __attribute__((alias("S"))) or "" if not present.
 func (n *Attributes) Alias() string { return n.alias }
