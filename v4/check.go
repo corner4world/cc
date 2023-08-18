@@ -1097,7 +1097,7 @@ func (n *Declaration) check(c *ctx) {
 					d.Type().Attributes().setVisibilityDecl(d)
 				}
 			}
-			d.fixVolatile()
+			d.fixVolatile(c)
 		}
 	case DeclarationAssert: // StaticAssertDeclaration
 		n.StaticAssertDeclaration.check(c)
@@ -1927,16 +1927,21 @@ func (n *Declarator) check(c *ctx, t Type) (r Type) {
 	return n.Type()
 }
 
-func (n *Declarator) fixVolatile() {
+func (n *Declarator) fixVolatile(c *ctx) {
 	switch {
 	case n.IsVolatile() && n.Pointer != nil && !n.Pointer.TypeQualifiers.isVolatile():
 		// volatile int *p;
 		n.isVolatile = false
-		pt := n.Type().(*PointerType)
-		pt.attributer.p.isVolatile = false
-		el := pt.Elem()
-		attr := volatileAttr(el.Attributes(), true)
-		el.setAttr(attr)
+		switch x := n.Type().(type) {
+		case *PointerType:
+			pt := n.Type().(*PointerType)
+			pt.attributer.p.isVolatile = false
+			el := pt.Elem()
+			attr := volatileAttr(el.Attributes(), true)
+			el.setAttr(attr)
+		default:
+			c.errors.add(errorf("TODO %v: %T", n.Position(), x))
+		}
 	case !n.IsVolatile() && n.Pointer != nil && n.Pointer.TypeQualifiers.isVolatile():
 		// int *volatile p;
 		n.isVolatile = true
