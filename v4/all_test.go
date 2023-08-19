@@ -2415,3 +2415,55 @@ func TestVolatile4(t *testing.T) {
 		t.Error(g, e)
 	}
 }
+
+func TestBindDeclarations(t *testing.T) {
+	const src = "int x __attribute__((addr(42)));"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	var found bool
+	for _, v := range ast.Scope.Nodes["x"] {
+		d, ok := v.(*Declarator)
+		if !ok {
+			continue
+		}
+		found = true
+		attrs := d.Type().Attributes()
+		t.Logf("%T: %v", v, d.Type().Attributes())
+
+		if !attrs.IsAttrSet("addr") {
+			t.Fatalf("attrs.IsAttrSet(\"addr\") failed")
+		}
+		attrval := attrs.AttrValue("addr")
+		if attrval == nil {
+			t.Fatalf("attrs.AttrValue(\"addr\") returned nil")
+		}
+		if len(attrval) != 1 {
+			t.Fatalf("attrs.AttrValue(\"addr\") returned slice of wrong length")
+		}
+		t.Log(attrval)
+		intval, ok := attrval[0].(Int64Value)
+		if !ok {
+			t.Fatalf("attrs.AttrValue(\"addr\") returned wrong type: %T", attrval[0])
+		}
+		if intval != 42 {
+			t.Fatalf("attrs.AttrValue(\"addr\") returned wrong value")
+		}
+	}
+	if !found {
+		t.Fatalf("Could not find node associated with x")
+	}
+}

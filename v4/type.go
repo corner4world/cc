@@ -2434,12 +2434,13 @@ func IntegerPromotion(t Type) Type {
 //
 // See also https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html
 type Attributes struct {
-	alias          string
-	aliasDecl      *Declarator
-	aligned        int64
-	vectorSize     int64
-	visibility     string
-	visibilityDecl *Declarator
+	alias            string
+	aliasDecl        *Declarator
+	aligned          int64
+	vectorSize       int64
+	visibility       string
+	visibilityDecl   *Declarator
+	customAttributes map[string][]Value
 
 	isNonZero  bool
 	isVolatile bool
@@ -2461,6 +2462,13 @@ func (n *Attributes) setVisibility(s string)          { n.visibility = s; n.isNo
 func (n *Attributes) setVisibilityDecl(d *Declarator) { n.visibilityDecl = d; n.isNonZero = true }
 func (n *Attributes) setWeak()                        { n.weak = true; n.isNonZero = true }
 
+func (n *Attributes) setCustom(attr string, v []Value) {
+	if n.customAttributes == nil {
+		n.customAttributes = make(map[string][]Value, 1)
+	}
+	n.customAttributes[attr] = v
+	n.isNonZero = true
+}
 func (n *Attributes) setIsVolatile(v bool) {
 	v, n.isVolatile = n.isVolatile, v
 	n.isNonZero = v != n.isVolatile
@@ -2586,7 +2594,51 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.isVolatile = true
 	}
 
+	var ok bool
+	r.customAttributes, ok = mergeCustomAttributes(n.customAttributes, m.customAttributes)
+	if !ok {
+		// This is slightly different from how the gcc documentation handles it.
+		// GCC only emits a warning, not an error, and it is not written down
+		// how gcc actually merges.
+		return nil, errorf("%v: conflicting attributes: (%+v), (%+v)", pos(nd), n, m)
+	}
+
 	return r, nil
+}
+
+func mergeCustomAttributes(n, m map[string][]Value) (map[string][]Value, bool) {
+	var r map[string][]Value
+	ok := true
+	if m != nil {
+		if n == nil {
+			r = m
+		} else {
+			r = make(map[string][]Value, len(n))
+			for k, v := range n {
+				n[k] = v
+			}
+			for a, nvs := range m {
+				// Only skip it if it already exists and is not empty.
+				// For example, it is allw
+				if cvs, ok := n[a]; ok && len(cvs) != 0 {
+					if len(nvs) == 0 {
+						continue
+					}
+					if len(cvs) != len(nvs) {
+						ok = false
+					}
+					for i, cv := range cvs {
+						if cv != nvs[i] {
+							ok = false
+						}
+					}
+					continue
+				}
+				r[a] = nvs
+			}
+		}
+	}
+	return r, ok
 }
 
 // IsVolatile reports if a type is qualified by the 'volatile' keyword.
@@ -2617,6 +2669,16 @@ func (n *Attributes) VisibilityDecl() *Declarator { return n.visibilityDecl }
 
 // Weak reports whether 'weak', as in __attribute__((weak, alias("S"))), is present.
 func (n *Attributes) Weak() bool { return n.weak }
+
+// IsAttrSet reports whether an attribute has been set, with or without value. For example,
+// with __attribute__((my_attribute1, my_attribute2(42))), it reports true for both my_attribute1
+// and my_attribute2
+func (n *Attributes) IsAttrSet(name string) bool { return n.AttrValue(name) != nil }
+
+// AttrValue reports the value associated with a custom attribute, if present. For example,
+// with __attribute__((my_attribute1, my_attribute2(42))), it reports nil for my_attribute1
+// but a Value containing 42 for my_attribute2
+func (n *Attributes) AttrValue(name string) []Value { return n.customAttributes[name] }
 
 type attributer struct{ p *Attributes }
 

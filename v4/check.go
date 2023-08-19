@@ -2217,9 +2217,9 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 	}
 
 	n0 := n
+
 	var attr *Attributes
 	var ts []TypeSpecifierCase
-
 	defer func(n *DeclarationSpecifiers) {
 		if r == nil || r == Invalid {
 			//panic(todo("%v: %v %v", n.Position(), ts, TypeString(r)))
@@ -2267,13 +2267,12 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			c.errors.add(errorf("internal error: %v", n.Case))
 		}
 	}
-	switch len(attrs) {
-	case 0:
-		// ok
-	case 1:
-		attr = attrs[0]
-	default:
-		c.errors.add(errorf("TODO %T", n0.Position()))
+	for _, nattr := range attrs {
+		var err error
+		attr, err = attr.merge(n, nattr)
+		if err != nil {
+			c.errors.add(errorf("TODO %T", n0.Position()))
+		}
 	}
 
 	t, ok := c.builtinTypes[ts2String(ts)]
@@ -2341,9 +2340,12 @@ func (n *AttributeValueList) check(c *ctx, attr *Attributes) {
 //
 // |       IDENTIFIER '(' ArgumentExpressionList ')'  // Case AttributeValueExpr
 func (n *AttributeValue) check(c *ctx, attr *Attributes) {
+
 	var dummy purer
 	switch n.Case {
 	case AttributeValueIdent: // IDENTIFIER
+		attr.setCustom(n.Token.SrcStr(), []Value{})
+
 		switch n.Token.SrcStr() {
 		case
 			"__weak__",
@@ -2353,6 +2355,16 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 		}
 	case AttributeValueExpr: // IDENTIFIER '(' ArgumentExpressionList ')'
 		n.ArgumentExpressionList.check(c, decay|ignoreUndefined, &dummy)
+
+		attrvalues := []Value{}
+		for ev := n.ArgumentExpressionList; ev != nil; ev = ev.ArgumentExpressionList {
+			if ev.AssignmentExpression == nil {
+				continue
+			}
+			attrvalues = append(attrvalues, ev.AssignmentExpression.Value())
+		}
+		attr.setCustom(n.Token.SrcStr(), attrvalues)
+
 		switch n.Token.SrcStr() {
 		case
 			"__alias__",
