@@ -386,6 +386,8 @@ func (n *EqualityExpression) eval(c *ctx, mode flags) (r Value) {
 				// ok
 			case Int64Value:
 				n.val = bool2int(x == y)
+			case UInt64Value:
+				n.val = bool2int(x == Int64Value(y))
 			default:
 				c.errors.add(errorf("TODO %v TYPE %T", n.Case, y))
 			}
@@ -395,6 +397,8 @@ func (n *EqualityExpression) eval(c *ctx, mode flags) (r Value) {
 				// ok
 			case UInt64Value:
 				n.val = bool2int(x == y)
+			case Int64Value:
+				n.val = bool2int(x == UInt64Value(y))
 			default:
 				c.errors.add(errorf("TODO %v TYPE %T", n.Case, y))
 			}

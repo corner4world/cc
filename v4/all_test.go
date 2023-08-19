@@ -2467,3 +2467,22 @@ func TestBindDeclarations(t *testing.T) {
 		t.Fatalf("Could not find node associated with x")
 	}
 }
+
+func TestPointerIntComparison(t *testing.T) {
+	const src = "void f(){int x = ((char *)1) == 1;}\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	_, err = Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+}
