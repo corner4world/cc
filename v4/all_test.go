@@ -2416,6 +2416,38 @@ func TestVolatile4(t *testing.T) {
 	}
 }
 
+func TestVolatile5(t *testing.T) {
+	const src = "volatile int *p[];\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	if g, e := d.IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsVolatile(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*ArrayType).Elem().Attributes().IsVolatile(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
 func TestBindDeclarations(t *testing.T) {
 	const src = "int x __attribute__((addr(42)));"
 	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)

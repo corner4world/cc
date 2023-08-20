@@ -1934,11 +1934,16 @@ func (n *Declarator) fixVolatile(c *ctx) {
 		n.isVolatile = false
 		switch x := n.Type().(type) {
 		case *PointerType:
-			pt := n.Type().(*PointerType)
-			pt.attributer.p.isVolatile = false
-			el := pt.Elem()
+			x.attributer.p.isVolatile = false
+			el := x.Elem()
 			attr := volatileAttr(el.Attributes(), true)
 			el.setAttr(attr)
+		case *ArrayType:
+			x.attributer.p.isVolatile = false
+			el := x.Elem()
+			attr := volatileAttr(el.Attributes(), true)
+			el = el.setAttr(attr)
+			x.elem.typ = el
 		default:
 			c.errors.add(errorf("TODO %v: %T", n.Position(), x))
 		}
