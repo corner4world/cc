@@ -455,7 +455,7 @@ func (c *ctx) wcharT(n Node) Type {
 			}
 		}
 		if c.wcharT0 == nil {
-			c.errors.add(errorf("%v: undefined type: wchar_t", n.Position()))
+			c.errors.add(errorf("%v: undefined type: wchar_t, falling back to int", n.Position()))
 			c.wcharT0 = c.intT
 		}
 	}
