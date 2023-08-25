@@ -3750,6 +3750,7 @@ func (n *InclusiveOrExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3788,6 +3789,7 @@ func (n *ExclusiveOrExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3826,6 +3828,7 @@ func (n *AndExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3865,6 +3868,7 @@ func (n *EqualityExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3922,6 +3926,7 @@ func (n *RelationalExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3978,6 +3983,7 @@ func (n *ShiftExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4008,6 +4014,17 @@ func (n *ShiftExpression) check(c *ctx, mode flags) (r Type) {
 	return n.Type()
 }
 
+func (c *ctx) notVolatile(n Node, t Type) Type {
+	attr := t.Attributes()
+	if attr == nil || !attr.IsVolatile() {
+		return t
+	}
+
+	a := *attr
+	a.isVolatile = false
+	return t.setAttr(&a)
+}
+
 // AdditiveExpression:
 //
 //	MultiplicativeExpression                         // Case AdditiveExpressionMul
@@ -4025,6 +4042,7 @@ func (n *AdditiveExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4095,6 +4113,7 @@ func (n *MultiplicativeExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
+		n.typ = c.notVolatile(n, n.Type())
 		n.eval(c, mode)
 	}()
 
