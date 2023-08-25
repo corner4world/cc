@@ -591,6 +591,13 @@ type Config struct {
 	SysIncludePaths     []string
 	keywords            map[string]rune
 
+	// Default cc.Kinds for types the type checker cannot work without. Used only
+	// when the type is not defined already but needed. Must be an integer type or
+	// zero (= cc.InvalidKind). The last fallback is C int.
+	DefaultSizeT    Kind
+	DefaultPtrdiffT Kind
+	DefaultWcharT   Kind
+
 	// Header disables type checking of function bodies.
 	Header                 bool
 	doNotInjectFunc        bool // testing

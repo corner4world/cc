@@ -455,8 +455,14 @@ func (c *ctx) wcharT(n Node) Type {
 			}
 		}
 		if c.wcharT0 == nil {
+			c.wcharT0, _ = c.kindToType(c.cfg.DefaultWcharT)
+		}
+		if c.wcharT0 == nil {
 			c.errors.add(errorf("%v: undefined type: wchar_t, falling back to int", n.Position()))
 			c.wcharT0 = c.intT
+		}
+		if !IsIntegerType(c.wcharT0) {
+			c.errors.add(errorf("%v: invalid type: wchar_t is not an integer type", n.Position()))
 		}
 	}
 	return c.wcharT0
@@ -477,8 +483,14 @@ func (c *ctx) ptrDiffT(n Node) Type {
 			}
 		}
 		if c.ptrDiffT0 == nil {
+			c.ptrDiffT0, _ = c.kindToType(c.cfg.DefaultPtrdiffT)
+		}
+		if c.ptrDiffT0 == nil {
 			c.errors.add(errorf("%v: undefined type: ptrdiff_t", n.Position()))
 			c.ptrDiffT0 = c.intT
+		}
+		if !IsIntegerType(c.ptrDiffT0) {
+			c.errors.add(errorf("%v: invalid type: ptrdiff_t is not an integer type", n.Position()))
 		}
 	}
 	return c.ptrDiffT0
@@ -499,11 +511,46 @@ func (c *ctx) sizeT(n Node) Type {
 			}
 		}
 		if c.sizeT0 == nil {
+			c.sizeT0, _ = c.kindToType(c.cfg.DefaultSizeT)
+		}
+		if c.sizeT0 == nil {
 			c.errors.add(errorf("%v: undefined type: size_t", n.Position()))
 			c.sizeT0 = c.intT
 		}
+		if !IsIntegerType(c.sizeT0) {
+			c.errors.add(errorf("%v: invalid type: size_t is not an integer type", n.Position()))
+		}
 	}
 	return c.sizeT0
+}
+
+func (c *ctx) kindToType(k Kind) (t Type, err error) {
+	switch k {
+	case Char:
+		return c.ast.Char, nil
+	case Int:
+		return c.ast.Int, nil
+	case Long:
+		return c.ast.Long, nil
+	case LongLong:
+		return c.ast.LongLong, nil
+	case SChar:
+		return c.ast.SChar, nil
+	case Short:
+		return c.ast.Short, nil
+	case UChar:
+		return c.ast.UChar, nil
+	case UInt:
+		return c.ast.UInt, nil
+	case ULong:
+		return c.ast.ULong, nil
+	case ULongLong:
+		return c.ast.ULongLong, nil
+	case UShort:
+		return c.ast.UShort, nil
+	default:
+		return nil, errorf("kindToType: invalid kind: %v", k)
+	}
 }
 
 func (c *ctx) fixSyntheticDeclarators(s *Scope) {

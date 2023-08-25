@@ -2518,3 +2518,41 @@ func TestPointerIntComparison(t *testing.T) {
 		t.Fatalf("parse error: %v", err)
 	}
 }
+
+func TestRandomError(t *testing.T) {
+	const src = "void f(){struct T{unsigned char x[1];};(struct T){0};}\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: `int __predefined_declarator;`}, // Just to test without wchar_t definition
+		{Name: "test.h", Value: src},
+	}
+
+	if _, err = Translate(cfg, sources); err == nil {
+		t.Fatalf("expected Translate error: %v", err)
+	}
+}
+
+func TestRandomError2(t *testing.T) {
+	const src = "void f(){struct T{unsigned char x[1];};(struct T){0};}\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: `int __predefined_declarator;`}, // Just to test without wchar_t definition
+		{Name: "test.h", Value: src},
+	}
+
+	cfg.DefaultSizeT = ULongLong
+	cfg.DefaultWcharT = Int
+	if _, err = Translate(cfg, sources); err != nil {
+		t.Fatalf("unexpected Translate error: %v", err)
+	}
+}
