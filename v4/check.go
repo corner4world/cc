@@ -1976,17 +1976,29 @@ func (n *Declarator) check(c *ctx, t Type) (r Type) {
 
 func (n *Declarator) fixVolatile(c *ctx) {
 	switch {
+	case n.IsVolatile() && n.Pointer == nil:
+		if n.Type().Attributes().IsVolatile() {
+			break
+		}
+
+		attr := volatileAttr(n.Type().Attributes(), true)
+		n.typ = n.Type().setAttr(attr)
+		attr = n.Type().Attributes()
 	case n.IsVolatile() && n.Pointer != nil && !n.Pointer.TypeQualifiers.isVolatile():
 		// volatile int *p;
 		n.isVolatile = false
 		switch x := n.Type().(type) {
 		case *PointerType:
-			x.attributer.p.isVolatile = false
+			if x.attributer.p != nil {
+				x.attributer.p.isVolatile = false
+			}
 			el := x.Elem()
 			attr := volatileAttr(el.Attributes(), true)
 			el.setAttr(attr)
 		case *ArrayType:
-			x.attributer.p.isVolatile = false
+			if x.attributer.p != nil {
+				x.attributer.p.isVolatile = false
+			}
 			el := x.Elem()
 			attr := volatileAttr(el.Attributes(), true)
 			el = el.setAttr(attr)
@@ -3394,6 +3406,10 @@ func (n *StructDeclarator) check(c *ctx, t Type, isAtomic, isConst, isVolatile, 
 		n.Declarator.isConst = isConst
 		n.Declarator.isVolatile = isVolatile
 		n.Declarator.isRestrict = isRestrict
+		defer func() {
+			n.Declarator.fixVolatile(c)
+			r.typ.typ = n.Declarator.Type()
+		}()
 	}
 	switch n.Case {
 	case StructDeclaratorDecl: // Declarator
