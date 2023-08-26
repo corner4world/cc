@@ -984,7 +984,7 @@ more:
 
 					//		else
 					//			return subst(IS’,FP,AP,HS,OS);
-					panic(todo(""))
+					goto more
 				} else {
 					//	else
 					//		return subst(##^HS’ • IS’,FP,AP,HS,OS • select(i,AP));
