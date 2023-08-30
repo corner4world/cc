@@ -294,7 +294,15 @@ func (c *ctx) checkScope(s *Scope) {
 						}
 					}
 				}
+				isStatic := false
 				for _, v := range ds {
+					if v.IsStatic() {
+						isStatic = true
+						break
+					}
+				}
+				for _, v := range ds {
+					v.isStatic = isStatic
 					var err error
 					if t, err = mergeAttr(t, v.Type().Attributes()); err != nil {
 						c.errors.add(errorf("%v: %v", v.Position(), err))
