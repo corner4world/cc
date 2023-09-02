@@ -339,8 +339,6 @@ func (p *parser) parse() (ast *AST, err error) {
 	p.cpp.rune()
 	tu := p.translationUnit()
 
-	defer func() { p.cpp.mmap = nil }()
-
 	if p.scope == nil && p.scope.Parent != nil {
 		p.cpp.eh("internal error (%v:)", origin(1))
 	}
@@ -2364,7 +2362,23 @@ func (p *parser) primaryExpression(checkTypeName bool) (r *PrimaryExpression) {
 		p.cpp.eh("%v: unexpected %v, expected primary expression", t.Position(), runeName(t.Ch))
 		return nil
 	}
-	r.m = p.cpp.mmap[mmapKey{r.Token.s, r.Token.off}]
+	if m := r.Token.m; m != nil {
+		var l []Token
+		for _, v := range m.ReplacementList() {
+			switch v.Ch {
+			case ' ', '\n', '\t', '\r', '\f':
+				// nop
+			default:
+				l = append(l, v)
+			}
+		}
+		for len(l) != 0 && l[0].Ch == '(' && l[len(l)-1].Ch == ')' {
+			l = l[1 : len(l)-1]
+		}
+		if len(l) == 1 {
+			r.m = m
+		}
+	}
 	return r
 }
 

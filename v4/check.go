@@ -1991,7 +1991,6 @@ func (n *Declarator) fixVolatile(c *ctx) {
 
 		attr := volatileAttr(n.Type().Attributes(), true)
 		n.typ = n.Type().setAttr(attr)
-		attr = n.Type().Attributes()
 	case n.IsVolatile() && n.Pointer != nil && !n.Pointer.TypeQualifiers.isVolatile():
 		// volatile int *p;
 		n.isVolatile = false

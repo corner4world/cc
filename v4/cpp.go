@@ -716,11 +716,6 @@ func (p *cppTokens) rune() rune {
 	return p.peek(0).Ch
 }
 
-type mmapKey struct {
-	s   *scannerSource
-	pos uint32
-}
-
 // cpp is the C preprocessor.
 type cpp struct {
 	cfg         *Config
@@ -731,7 +726,6 @@ type cpp struct {
 	included    *included
 	indentLevel int // debug dumps
 	macros      map[string]*Macro
-	mmap        map[mmapKey]*Macro
 	mstack      map[string][]*Macro
 	sources     []Source
 	stack       []interface{}
@@ -764,7 +758,6 @@ func newCPP(cfg *Config, fset *fset, sources []Source, eh errHandler) (*cpp, err
 		fset:    fset,
 		groups:  map[string]group{},
 		macros:  map[string]*Macro{},
-		mmap:    map[mmapKey]*Macro{},
 		mstack:  map[string][]*Macro{},
 		sources: sources,
 	}
@@ -860,10 +853,7 @@ more:
 			subst = c.subst(eval, m, repl, nil, nil, HS.add(src), nil)
 			for i := range subst {
 				subst[i].off = T.off
-			}
-			if len(repl) == 1 && len(subst) == 1 && m.IsConst {
-				t := subst[0]
-				c.mmap[mmapKey{t.s, t.off}] = m
+				subst[i].m = m
 			}
 			TS.prepend(&subst)
 			goto more

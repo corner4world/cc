@@ -153,6 +153,7 @@ type Token struct { // 32 bytes on a 64 bit machine.
 	sep uint32 // Index into .ss.buf of the preceding white space, including comments. Length is .src-.sep.
 	src uint32 // Index into .ss.buf, length is in .len.
 	len uint32 // Length of the source representation (.src).
+	m   *Macro
 }
 
 // newToken returns a newly created Token. The pos field is set equal to src.
