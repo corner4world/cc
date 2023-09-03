@@ -478,13 +478,13 @@ func (c *ctx) wcharT(n Node) Type {
 
 func (c *ctx) ptrDiffT(n Node) Type {
 	if c.ptrDiffT0 == nil {
-		if s := c.ast.Scope.Nodes["ptrdiff_t"]; len(s) != 0 {
+		if s := c.ast.Scope.Nodes["__predefined_ptrdiff_t"]; len(s) != 0 {
 			if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 				c.ptrDiffT0 = d.Type()
 			}
 		}
 		if c.ptrDiffT0 == nil {
-			if s := c.ast.Scope.Nodes["__predefined_ptrdiff_t"]; len(s) != 0 {
+			if s := c.ast.Scope.Nodes["ptrdiff_t"]; len(s) != 0 {
 				if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 					c.ptrDiffT0 = d.Type()
 				}
