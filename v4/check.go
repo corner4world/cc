@@ -450,13 +450,13 @@ func (c *ctx) decay(t Type, mode flags) Type {
 
 func (c *ctx) wcharT(n Node) Type {
 	if c.wcharT0 == nil {
-		if s := c.ast.Scope.Nodes["wchar_t"]; len(s) != 0 {
+		if s := c.ast.Scope.Nodes["__predefined_wchar_t"]; len(s) != 0 {
 			if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 				c.wcharT0 = d.Type()
 			}
 		}
 		if c.wcharT0 == nil {
-			if s := c.ast.Scope.Nodes["__predefined_wchar_t"]; len(s) != 0 {
+			if s := c.ast.Scope.Nodes["wchar_t"]; len(s) != 0 {
 				if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 					c.wcharT0 = d.Type()
 				}
@@ -506,13 +506,13 @@ func (c *ctx) ptrDiffT(n Node) Type {
 
 func (c *ctx) sizeT(n Node) Type {
 	if c.sizeT0 == nil {
-		if s := c.ast.Scope.Nodes["size_t"]; len(s) != 0 {
+		if s := c.ast.Scope.Nodes["__predefined_size_t"]; len(s) != 0 {
 			if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 				c.sizeT0 = d.Type()
 			}
 		}
 		if c.sizeT0 == nil {
-			if s := c.ast.Scope.Nodes["__predefined_size_t"]; len(s) != 0 {
+			if s := c.ast.Scope.Nodes["size_t"]; len(s) != 0 {
 				if d, ok := s[0].(*Declarator); ok && d.isTypename && d.Type() != Invalid {
 					c.sizeT0 = d.Type()
 				}
