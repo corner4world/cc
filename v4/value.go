@@ -1377,6 +1377,8 @@ func isZero(v Value) bool {
 		return x == 0
 	case UInt64Value:
 		return x == 0
+	case StringValue:
+		return false
 	default:
 		panic(todo("%T", x))
 	}
@@ -1390,6 +1392,8 @@ func isNonzero(v Value) bool {
 		return x != 0
 	case UInt64Value:
 		return x != 0
+	case StringValue:
+		return true
 	default:
 		panic(todo("%T", x))
 	}
