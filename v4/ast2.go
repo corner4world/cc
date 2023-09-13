@@ -99,6 +99,16 @@ func (n *Declarator) Linkage() Linkage {
 		return External
 	}
 
+	if n.LexicalScope().Parent != nil {
+		if t := n.Type(); t != nil && t.Kind() == Function && !n.IsFuncDef() {
+			if n.IsStatic() {
+				return Internal
+			}
+
+			return External
+		}
+	}
+
 	return None
 }
 
