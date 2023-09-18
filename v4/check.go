@@ -1133,7 +1133,9 @@ func (n *Declaration) check(c *ctx) {
 		var alignas int
 		var err error
 		t := n.DeclarationSpecifiers.check(c, &isExtern, &isStatic, &isAtomic, &isThreadLocal, &isConst, &isVolatile, &isInline, &isRegister, &isAuto, &isNoreturn, &isRestrict, &alignas)
+		dsa := t.Attributes()
 		attr := n.AttributeSpecifierList.check(c)
+		asa := attr
 		if t != nil {
 			if a := t.Attributes(); a != nil {
 				if attr, err = attr.merge(n, a); err != nil {
@@ -1153,6 +1155,9 @@ func (n *Declaration) check(c *ctx) {
 				}
 			}
 			d.fixVolatile(c)
+			if dsa != nil && d.Pointer != nil && asa == nil {
+				d.fixPointerAttr(c)
+			}
 		}
 	case DeclarationAssert: // StaticAssertDeclaration
 		n.StaticAssertDeclaration.check(c)
@@ -1980,6 +1985,26 @@ func (n *Declarator) check(c *ctx, t Type) (r Type) {
 		n.typ = r.Decay()
 	}
 	return n.Type()
+}
+
+func (n *Declarator) fixPointerAttr(c *ctx) {
+	// trc("%v: n.Type.Attributes=%+v n.Type.Elem.Attributes=%+v", n.Position(), n.Type().Attributes(), n.Type().(*PointerType).Elem().Attributes())
+	// defer func() {
+	// 	trc("%v: -> n.Type.Attributes=%+v n.Type.Elem.Attributes=%+v", n.Position(), n.Type().Attributes(), n.Type().(*PointerType).Elem().Attributes())
+	// }()
+	switch {
+	case n.Pointer != nil:
+		switch x := n.Type().(type) {
+		case *PointerType:
+			x.attributer.p.customAttributes = nil
+		case *ArrayType:
+			x.attributer.p.customAttributes = nil
+		case *FunctionType:
+			x.attributer.p.customAttributes = nil
+		default:
+			c.errors.add(errorf("TODO %v: %T", n.Position(), x))
+		}
+	}
 }
 
 func (n *Declarator) fixVolatile(c *ctx) {

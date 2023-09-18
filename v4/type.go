@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"modernc.org/sortutil"
 	"modernc.org/token"
 )
 
@@ -21,6 +22,8 @@ var (
 	_ Type = (*PredefinedType)(nil)
 	_ Type = (*StructType)(nil)
 	_ Type = (*UnionType)(nil)
+
+	_ sort.Interface = values{}
 )
 
 var (
@@ -260,7 +263,7 @@ type Type interface {
 	str(b *strings.Builder, useTag bool) *strings.Builder
 }
 
-func mergeAttr(t Type, a *Attributes) (Type, error) {
+func mergeAttr(t Type, a *Attributes) (r Type, err error) {
 	if a == nil {
 		return t, nil
 	}
@@ -2606,39 +2609,28 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	return r, nil
 }
 
-func mergeCustomAttributes(n, m map[string][]Value) (map[string][]Value, bool) {
-	var r map[string][]Value
-	ok := true
-	if m != nil {
-		if n == nil {
-			r = m
-		} else {
-			r = make(map[string][]Value, len(n))
-			for k, v := range n {
-				n[k] = v
-			}
-			for a, nvs := range m {
-				// Only skip it if it already exists and is not empty.
-				// For example, it is allw
-				if cvs, ok := n[a]; ok && len(cvs) != 0 {
-					if len(nvs) == 0 {
-						continue
-					}
-					if len(cvs) != len(nvs) {
-						ok = false
-					}
-					for i, cv := range cvs {
-						if cv != nvs[i] {
-							ok = false
-						}
-					}
-					continue
-				}
-				r[a] = nvs
-			}
+func mergeCustomAttributes(n, m map[string][]Value) (r map[string][]Value, ok bool) {
+	if len(n)+len(m) != 0 {
+		r = make(map[string][]Value)
+		for k, v := range m {
+			r[k] = v
+		}
+		for k, v := range n {
+			r[k] = append(r[k], v...)
+		}
+		for k, v := range r {
+			r[k] = v[:sortutil.Dedupe(values(v))]
 		}
 	}
-	return r, ok
+	return r, true
+}
+
+type values []Value
+
+func (v values) Len() int      { return len(v) }
+func (v values) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
+func (v values) Less(i, j int) bool {
+	return fmt.Sprintf("%T(%[1]v)", v[i]) < fmt.Sprintf("%T(%[1]v)", v[j])
 }
 
 // IsVolatile reports if a type is qualified by the 'volatile' keyword.
@@ -2678,7 +2670,13 @@ func (n *Attributes) IsAttrSet(name string) bool { return n.AttrValue(name) != n
 // AttrValue reports the value associated with a custom attribute, if present. For example,
 // with __attribute__((my_attribute1, my_attribute2(42))), it reports nil for my_attribute1
 // but a Value containing 42 for my_attribute2
-func (n *Attributes) AttrValue(name string) []Value { return n.customAttributes[name] }
+func (n *Attributes) AttrValue(name string) []Value {
+	if n != nil {
+		return n.customAttributes[name]
+	}
+
+	return nil
+}
 
 type attributer struct{ p *Attributes }
 

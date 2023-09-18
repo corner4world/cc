@@ -40,6 +40,7 @@ var (
 	defaultCfg0 *Config
 	re          *regexp.Regexp
 	totalRam    = memory.TotalMemory()
+	_           = stack
 
 	oTrace = flag.Bool("trc", false, "Print tested paths.")
 )
@@ -61,6 +62,8 @@ func init() {
 	}
 
 }
+
+func stack() []byte { return debug.Stack() }
 
 func walk(dir string, f func(pth string, fi os.FileInfo) error) error {
 	fis, err := cfs.ReadDir(dir)
@@ -2554,5 +2557,69 @@ func TestRandomError2(t *testing.T) {
 	cfg.DefaultWcharT = Int
 	if _, err = Translate(cfg, sources); err != nil {
 		t.Fatalf("unexpected Translate error: %v", err)
+	}
+}
+
+func TestAttrValue(t *testing.T) {
+	const src = `
+char a1 __attribute__((b1(100)));
+__attribute__((b2(200))) short a2;
+int *a3 __attribute__((b3(300)));
+__attribute__((b4(400))) long *a4;
+`
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["a1"][0].(*Declarator)
+	a := d.Type().Attributes()
+	vs := a.AttrValue("b1")
+	if len(vs) != 1 || vs[0] != Int64Value(100) {
+		t.Fatal(vs)
+	}
+
+	d = ast.Scope.Nodes["a2"][0].(*Declarator)
+	a = d.Type().Attributes()
+	vs = a.AttrValue("b2")
+	if len(vs) != 1 || vs[0] != Int64Value(200) {
+		t.Fatal(vs)
+	}
+
+	d = ast.Scope.Nodes["a3"][0].(*Declarator)
+	a = d.Type().Attributes()
+	vs = a.AttrValue("b3")
+	if len(vs) != 1 || vs[0] != Int64Value(300) {
+		t.Fatal(vs)
+	}
+
+	a = d.Type().(*PointerType).Elem().Attributes()
+	vs = a.AttrValue("b3")
+	if len(vs) != 0 {
+		t.Fatal(vs)
+	}
+
+	d = ast.Scope.Nodes["a4"][0].(*Declarator)
+	a = d.Type().Attributes()
+	vs = a.AttrValue("b4")
+	if len(vs) != 0 {
+		t.Fatal(vs)
+	}
+
+	a = d.Type().(*PointerType).Elem().Attributes()
+	vs = a.AttrValue("b4")
+	if len(vs) != 1 || vs[0] != Int64Value(400) {
+		t.Fatal(vs)
 	}
 }
