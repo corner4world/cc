@@ -335,7 +335,7 @@ func decodeEscapeSequence(eh errHandler, tok Token, s string) (rune, int) {
 	case 'x':
 		v, n := 0, 2
 	loop2:
-		for i := 2; i < len(s); i++ {
+		for i := 2; i < len(s) && i < 4; i++ {
 			r := s[i]
 			switch {
 			case r >= '0' && r <= '9', r >= 'a' && r <= 'f', r >= 'A' && r <= 'F':
