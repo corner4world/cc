@@ -92,6 +92,7 @@ typedef __PTRDIFF_TYPE__ __predefined_ptrdiff_t;
 #define __builtin_huge_vall(x) __builtin_huge_val(x)
 #endif
 
+
 __SIZE_TYPE__ __builtin_strcspn(const char *s, const char *reject);
 __SIZE_TYPE__ __builtin_strlen(const char *s);
 __SIZE_TYPE__ __builtin_strspn(const char *s, const char *accept);
@@ -161,6 +162,10 @@ float __builtin_tanf(float x);
 float __builtin_tanhf(float x);
 int __builtin___sprintf_chk(char * str, int flag, __SIZE_TYPE__ strlen, char * format, ...);
 int __builtin_abs(int j);
+int __builtin_clz (unsigned int x);
+int __builtin_clzl (unsigned long x);
+int __builtin_ctz (unsigned int x);
+int __builtin_ctzl (unsigned long x);
 int __builtin_dprintf(int fd, const char *format, ...);
 int __builtin_fprintf(void *stream, const char *format, ...);
 int __builtin_fputc(int c, void *stream);
