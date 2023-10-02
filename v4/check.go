@@ -831,6 +831,7 @@ func (c *ctx) checkFunctionDefinition(sc *Scope, ds *DeclarationSpecifiers, d *D
 				d.resolved = (*Scope)(d.lexicalScope)
 				param.Declarator = d
 				param.typ = d.Type().Decay()
+				d.typ = param.typ
 			}
 			ft.fp = append(ft.fp, param)
 		}
