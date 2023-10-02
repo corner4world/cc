@@ -83,7 +83,6 @@ typedef __PTRDIFF_TYPE__ __predefined_ptrdiff_t;
 #define __FUNCTION__ __func__
 #define __PRETTY_FUNCTION__ __func__
 
-#if __STDC_HOSTED__
 #ifdef __clang__
 #define __builtin_convertvector(src, type) ((type)(src))
 #endif
@@ -260,7 +259,6 @@ int __darwin_check_fd_set_overflow(int, void *, int) {
 	__builtin_abort();
 }
 #endif
-#endif // __STDC_HOSTED__
 `
 
 // TODO
