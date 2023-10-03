@@ -4278,6 +4278,7 @@ func (n *UnaryExpression) check(c *ctx, mode flags) (r Type) {
 		UnaryExpressionInc, // "++" UnaryExpression
 		UnaryExpressionDec: // "--" UnaryExpression
 
+		n.setPure(false)
 		n.typ = n.UnaryExpression.check(c, mode.add(decay))
 		c.assignTo(n.UnaryExpression, false)
 		if !IsRealType(n.Type()) && !isPointerType(n.Type()) {
@@ -4537,7 +4538,7 @@ out:
 				break out
 			}
 
-			n.val = bool2int(args[0].Value() != Unknown)
+			n.val = bool2int(n.Pure() && args[0].Value() != Unknown)
 			break out
 		default:
 			mode = mode.add(implicitFuncDef)
@@ -4626,6 +4627,8 @@ out:
 	case
 		PostfixExpressionInc, // PostfixExpression "++"
 		PostfixExpressionDec: // PostfixExpression "--"
+
+		n.setPure(false)
 		t := n.PostfixExpression.check(c, mode.add(decay))
 		c.assignTo(n.PostfixExpression, false)
 		switch {
