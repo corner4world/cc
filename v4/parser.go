@@ -271,7 +271,7 @@ func (p *parser) shift(checkTypeName bool) (r Token) {
 		for p.rune(false) == rune(STRINGLITERAL) {
 			t := p.shift0()
 			sep = append(sep, t.Sep()...)
-			src = append(src[:len(src)-1], t.Src()[1:]...)
+			src = append(canonicalizeStrlitTail(src[:len(src)-1]), t.Src()[1:]...)
 		}
 		r.Set(sep, src)
 	case r.Ch == rune(LONGSTRINGLITERAL) && (p.rune(false) == rune(LONGSTRINGLITERAL) || p.rune(false) == rune(STRINGLITERAL)):
@@ -283,11 +283,11 @@ func (p *parser) shift(checkTypeName bool) (r Token) {
 			case rune(LONGSTRINGLITERAL):
 				t := p.shift0()
 				sep = append(sep, t.Sep()...)
-				src = append(src[:len(src)-1], t.Src()[2:]...)
+				src = append(canonicalizeStrlitTail(src[:len(src)-1]), t.Src()[2:]...)
 			case rune(STRINGLITERAL):
 				t := p.shift0()
 				sep = append(sep, t.Sep()...)
-				src = append(src[:len(src)-1], t.Src()[1:]...)
+				src = append(canonicalizeStrlitTail(src[:len(src)-1]), t.Src()[1:]...)
 			default:
 				break out
 			}

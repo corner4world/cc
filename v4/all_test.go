@@ -1074,6 +1074,8 @@ func testParserBug(t *testing.T, dir string, blacklist map[string]struct{}) {
 	t.Logf("files %v, skip %v, ok %v, fails %v", files, skip, ok, len(fails))
 }
 
+// ~/src/modernc.org/ccorpus2/
+
 func TestParse(t *testing.T) {
 	cfg := defaultCfg()
 	cfg.SysIncludePaths = append(cfg.SysIncludePaths, "Include") // benchmarksgame
@@ -2621,5 +2623,24 @@ __attribute__((b4(400))) long *a4;
 	vs = a.AttrValue("b4")
 	if len(vs) != 1 || vs[0] != Int64Value(400) {
 		t.Fatal(vs)
+	}
+}
+
+func TestCanonicalizeStrlitTail(t *testing.T) {
+	for i, test := range []struct{ a, b string }{
+		{``, ``},
+		{`a`, `a`},
+		{`\a`, `\a`},
+		{`\-`, `\-`},
+		{`\x1`, `\x01`},
+		{`\x12`, `\x12`},
+		{`\x123`, `\x123`},
+		{`\0`, `\000`},
+		{`\01`, `\001`},
+		{`\0123`, `\0123`},
+	} {
+		if g, e := string(canonicalizeStrlitTail([]byte(test.a))), test.b; g != e {
+			t.Errorf("%v: %q -> %q, want %q", i, test.a, g, e)
+		}
 	}
 }

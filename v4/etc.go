@@ -740,3 +740,25 @@ func LeastCommonAncestorType(s []*Initializer) (r Type) {
 
 	return nil
 }
+
+// String concatenation (translation phase 6) helper.
+//
+// char *s = "A" "B"; -> |41 42|
+// char *s = "\0" "10"; -> |00 31 30| not |08|
+func canonicalizeStrlitTail(s []byte) (r []byte) {
+	switch l := len(s); {
+	case l >= 3 && s[l-3] == '\\' && s[l-2] == 'x':
+		//	...\x1
+		return append(s[:l-1], '0', s[l-1])
+	case l >= 2 && s[l-2] == '\\' && isOctalByte(s[l-1]):
+		//	 ...\0
+		return append(s[:l-1], '0', '0', s[l-1])
+	case l >= 3 && s[l-3] == '\\' && isOctalByte(s[l-2]) && isOctalByte(s[l-1]):
+		//	...\00
+		return append(s[:l-2], '0', s[l-2], s[l-1])
+	default:
+		return s
+	}
+}
+
+func isOctalByte(b byte) bool { return b >= '0' && b <= '7' }
