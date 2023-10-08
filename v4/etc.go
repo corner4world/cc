@@ -22,6 +22,7 @@ import (
 
 var (
 	extendedErrors bool // true: Errors will include origin info.
+	_              = extendedErrors
 )
 
 // origin returns caller's short position, skipping skip frames.
@@ -87,12 +88,7 @@ func errorf(s string, args ...interface{}) error {
 	default:
 		s = fmt.Sprintf(s, args...)
 	}
-	switch {
-	case extendedErrors:
-		return fmt.Errorf("%s (%v:)", s, origin(2))
-	default:
-		return fmt.Errorf("%s", s)
-	}
+	return fmt.Errorf("%s (%v:)", s, origin(2))
 }
 
 // printHooks configure strutil.PrettyString for pretty printing Token values.
