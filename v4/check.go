@@ -331,18 +331,7 @@ func (c *ctx) checkScope(s *Scope) {
 			c.errors.add(errorf("TODO %T", lss[0]))
 		}
 		if len(sus) > 1 {
-			var v0 string
-			for i, v := range sus {
-				if i == 0 {
-					v0 = NodeSource(v)
-					continue
-				}
-
-				if vn := NodeSource(v); vn != v0 {
-					c.errors.add(errorf("TODO %T", sus[0]))
-					break
-				}
-			}
+			c.errors.add(errorf("TODO %T", sus[0]))
 		}
 	}
 }
