@@ -4962,7 +4962,7 @@ func (n *PrimaryExpression) floatConst(c *ctx) (v Value, t Type) {
 
 		bf, _, err = big.ParseFloat(s[:len(s)-len("il")], 0, longDoublePrec, big.ToNearestEven)
 		if err == nil {
-			return &ComplexLongDoubleValue{Im: (*LongDoubleValue)(bf)}, c.ast.kinds[LongDouble]
+			return &ComplexLongDoubleValue{Im: (*LongDoubleValue)(bf)}, c.ast.kinds[ComplexLong]
 		}
 	case
 		strings.HasSuffix(s, "fi"),
@@ -4971,7 +4971,7 @@ func (n *PrimaryExpression) floatConst(c *ctx) (v Value, t Type) {
 		strings.HasSuffix(s, "jf"):
 
 		if val, err = strconv.ParseFloat(s[:len(s)-len("fi")], 64); err == nil {
-			return Complex64Value(complex(0, val)), c.ast.kinds[Float]
+			return Complex64Value(complex(0, val)), c.ast.kinds[ComplexFloat]
 		}
 	case strings.HasSuffix(s, "df"):
 		bf, _, err = big.ParseFloat(s[:len(s)-len("df")], 0, longDoublePrec, big.ToNearestEven)
