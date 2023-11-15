@@ -1334,10 +1334,12 @@ func TestTranslate(t *testing.T) {
 	blacklistCompCert := map[string]struct{}{}
 	blacklistMakarov := map[string]struct{}{}
 	blacklistGCC := map[string]struct{}{
-		// Assertions are deprecated, not supported.
-		"950919-1.c": {},
-		// Type size too big
-		"991014-1.c": {},
+		"950919-1.c": {}, // Assertions are deprecated, not supported.
+		"991014-1.c": {}, // Type size too big
+	}
+	blacklistDebian := map[string]struct{}{
+		"nbody-4.c": {}, // _Float16 not supported
+		"nbody-8.c": {}, // _Float16 not supported
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
 	case "linux/s390x", "linux/loong64":
@@ -1373,7 +1375,7 @@ func TestTranslate(t *testing.T) {
 		{cfg, "github.com/vnmakarov", blacklistMakarov},
 		{cfg, "sqlite-amalgamation", nil},
 		{cfg, "tcc-0.9.27/tests/tests2", nil},
-		{cfg, "benchmarksgame-team.pages.debian.net", nil},
+		{cfg, "benchmarksgame-team.pages.debian.net", blacklistDebian},
 	} {
 		t.Run(v.dir, func(t *testing.T) {
 			f, o, s, n := testTranslate(t, v.cfg, "assets/"+v.dir, v.blacklist)

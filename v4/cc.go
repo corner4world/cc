@@ -255,9 +255,7 @@ void __builtin_prefetch (void*, ...);
 void __builtin_unreachable();
 
 #ifdef __APPLE__
-int __darwin_check_fd_set_overflow(int, void *, int) {
-	__builtin_abort();
-}
+int __darwin_check_fd_set_overflow(int, void *, int);
 #endif
 `
 
