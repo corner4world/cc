@@ -2445,9 +2445,10 @@ type Attributes struct {
 	visibilityDecl   *Declarator
 	customAttributes map[string][]Value
 
-	isNonZero  bool
-	isVolatile bool
-	weak       bool
+	alwaysInline bool // __attribute__ ((__always_inline__))
+	isNonZero    bool
+	isVolatile   bool
+	weak         bool
 }
 
 func newAttributes() *Attributes {
@@ -2460,6 +2461,7 @@ func newAttributes() *Attributes {
 func (n *Attributes) setAlias(v string)               { n.alias = v; n.isNonZero = true }
 func (n *Attributes) setAliasDecl(d *Declarator)      { n.aliasDecl = d; n.isNonZero = true }
 func (n *Attributes) setAligned(v int64)              { n.aligned = v; n.isNonZero = true }
+func (n *Attributes) setAlwaysInline()                { n.alwaysInline = true; n.isNonZero = true }
 func (n *Attributes) setVectorSize(v int64)           { n.vectorSize = v; n.isNonZero = true }
 func (n *Attributes) setVisibility(s string)          { n.visibility = s; n.isNonZero = true }
 func (n *Attributes) setVisibilityDecl(d *Declarator) { n.visibilityDecl = d; n.isNonZero = true }
@@ -2472,6 +2474,7 @@ func (n *Attributes) setCustom(attr string, v []Value) {
 	n.customAttributes[attr] = v
 	n.isNonZero = true
 }
+
 func (n *Attributes) setIsVolatile(v bool) {
 	v, n.isVolatile = n.isVolatile, v
 	n.isNonZero = v != n.isVolatile
@@ -2597,6 +2600,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.isVolatile = true
 	}
 
+	switch {
+	case n.alwaysInline || m.alwaysInline:
+		r.alwaysInline = true
+	}
+
 	var ok bool
 	r.customAttributes, ok = mergeCustomAttributes(n.customAttributes, m.customAttributes)
 	if !ok {
@@ -2632,6 +2640,9 @@ func (v values) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 func (v values) Less(i, j int) bool {
 	return fmt.Sprintf("%T(%[1]v)", v[i]) < fmt.Sprintf("%T(%[1]v)", v[j])
 }
+
+// AlwaysInline reports whether __attribute__((__always_inline__)) is present.
+func (n *Attributes) AlwaysInline() bool { return n != nil && n.alwaysInline }
 
 // IsVolatile reports if a type is qualified by the 'volatile' keyword.
 func (n *Attributes) IsVolatile() bool { return n != nil && n.isVolatile }
