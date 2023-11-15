@@ -1085,6 +1085,10 @@ func TestParse(t *testing.T) {
 		// Assertions are deprecated, not supported.
 		"950919-1.c": {},
 	}
+	blacklistDebian := map[string]struct{}{
+		"nbody-4.c": {}, // _Float16 not supported
+		"nbody-8.c": {}, // _Float16 not supported
+	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
 	case "linux/s390x", "linux/loong64":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
@@ -1104,7 +1108,7 @@ func TestParse(t *testing.T) {
 		{cfg, "github.com/vnmakarov", nil},
 		{cfg, "sqlite-amalgamation", nil},
 		{cfg, "tcc-0.9.27/tests/tests2", nil},
-		{cfg, "benchmarksgame-team.pages.debian.net", nil},
+		{cfg, "benchmarksgame-team.pages.debian.net", blacklistDebian},
 	} {
 		t.Run(v.dir, func(t *testing.T) {
 			f, o, s, n := testParse(t, v.cfg, "assets/"+v.dir, v.blacklist)
