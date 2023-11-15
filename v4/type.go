@@ -2446,6 +2446,7 @@ type Attributes struct {
 	customAttributes map[string][]Value
 
 	alwaysInline bool // __attribute__ ((__always_inline__))
+	gnuInline    bool // __attribute__ ((__gnu_inline__))
 	isNonZero    bool
 	isVolatile   bool
 	weak         bool
@@ -2462,6 +2463,7 @@ func (n *Attributes) setAlias(v string)               { n.alias = v; n.isNonZero
 func (n *Attributes) setAliasDecl(d *Declarator)      { n.aliasDecl = d; n.isNonZero = true }
 func (n *Attributes) setAligned(v int64)              { n.aligned = v; n.isNonZero = true }
 func (n *Attributes) setAlwaysInline()                { n.alwaysInline = true; n.isNonZero = true }
+func (n *Attributes) setGNUInline()                   { n.gnuInline = true; n.isNonZero = true }
 func (n *Attributes) setVectorSize(v int64)           { n.vectorSize = v; n.isNonZero = true }
 func (n *Attributes) setVisibility(s string)          { n.visibility = s; n.isNonZero = true }
 func (n *Attributes) setVisibilityDecl(d *Declarator) { n.visibilityDecl = d; n.isNonZero = true }
@@ -2605,6 +2607,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 		r.alwaysInline = true
 	}
 
+	switch {
+	case n.gnuInline || m.gnuInline:
+		r.gnuInline = true
+	}
+
 	var ok bool
 	r.customAttributes, ok = mergeCustomAttributes(n.customAttributes, m.customAttributes)
 	if !ok {
@@ -2640,6 +2647,9 @@ func (v values) Swap(i, j int) { v[i], v[j] = v[j], v[i] }
 func (v values) Less(i, j int) bool {
 	return fmt.Sprintf("%T(%[1]v)", v[i]) < fmt.Sprintf("%T(%[1]v)", v[j])
 }
+
+// GNUInline reports whether __attribute__((__gnu_inline__)) is present.
+func (n *Attributes) GNUInline() bool { return n != nil && n.gnuInline }
 
 // AlwaysInline reports whether __attribute__((__always_inline__)) is present.
 func (n *Attributes) AlwaysInline() bool { return n != nil && n.alwaysInline }

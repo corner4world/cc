@@ -2450,8 +2450,9 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 
 			attr.setWeak()
 		case "__always_inline__":
-
 			attr.setAlwaysInline()
+		case "__gnu_inline__":
+			attr.setGNUInline()
 		}
 	case AttributeValueExpr: // IDENTIFIER '(' ArgumentExpressionList ')'
 		n.ArgumentExpressionList.check(c, decay|ignoreUndefined, &dummy)

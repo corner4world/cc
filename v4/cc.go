@@ -203,6 +203,7 @@ int __builtin_vfscanf(void *stream, const char *format, __builtin_va_list ap);
 int __builtin_vprintf(const char *format, __builtin_va_list ap);
 int __builtin_vscanf(const char *format, __builtin_va_list ap);
 int __builtin_vsnprintf(char *str, __SIZE_TYPE__ size, const char *format, __builtin_va_list ap);
+int __builtin___vsnprintf_chk(char * s, __SIZE_TYPE__ maxlen, int flag, __SIZE_TYPE__ slen, char * format, __builtin_va_list args);
 int __builtin_vsprintf(char *str, const char *format, __builtin_va_list ap);
 int __builtin_vsscanf(const char *str, const char *format, __builtin_va_list ap);
 long __builtin_expect(long, long);
