@@ -2650,3 +2650,61 @@ func TestCanonicalizeStrlitTail(t *testing.T) {
 		}
 	}
 }
+
+func TestVaArgs1(t *testing.T) {
+	//	parser.go:265:shift: TRC bug.c:7:9: U+E030 "g"
+	//	parser.go:265:shift: TRC bug.c:7:9: U+0028 '(' "("
+	//	parser.go:265:shift: TRC bug.c:7:9: U+E054 "\"foo\""
+	//	parser.go:265:shift: TRC bug.c:7:9: U+002C ',' ","	<--- comma not deleted
+	//	parser.go:265:shift: TRC bug.c:7:9: U+0029 ')' ")"
+	//	parser.go:265:shift: TRC bug.c:7:17: U+003B ';' ";"
+	//	parser.go:265:shift: TRC bug.c:8:1: U+007D '}' "}"
+	//
+	//	bug.c:7:9: unexpected ')', expected unary expression
+	//
+	//	https://gcc.gnu.org/onlinedocs/gcc-4.9.4/cpp/Variadic-Macros.html
+	cfg := defaultCfg()
+	cfg.noPredefinedDeclarator = true
+	_, err := Parse(cfg, []Source{
+		{Name: "bug.c", Value: `
+#define m(a, ...) g(a, ##__VA_ARGS__)
+
+void g() {}
+
+void f() {
+        m("foo");
+}
+`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVaArgs2(t *testing.T) {
+	//	parser.go:265:shift: TRC bug.c:7:9: U+E030 "g"
+	//	parser.go:265:shift: TRC bug.c:7:9: U+0028 '(' "("
+	//	parser.go:265:shift: TRC bug.c:7:9: U+E054 "\"foo\""
+	//	parser.go:265:shift: TRC bug.c:7:9: U+002C ',' ",42"	<--- malformed token
+	//	parser.go:265:shift: TRC bug.c:7:9: U+0029 ')' ")"
+	//	parser.go:265:shift: TRC bug.c:7:21: U+003B ';' ";"
+	//	parser.go:265:shift: TRC bug.c:8:1: U+007D '}' "}"
+	//
+	//	bug.c:7:9: unexpected ')', expected unary expression
+	cfg := defaultCfg()
+	cfg.noPredefinedDeclarator = true
+	_, err := Parse(cfg, []Source{
+		{Name: "bug.c", Value: `
+#define m(a, ...) g(a, ##__VA_ARGS__)
+
+void g() {}
+
+void f() {
+        m("foo", 42);
+}
+`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

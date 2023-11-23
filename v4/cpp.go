@@ -862,6 +862,7 @@ more:
 			if t2.Ch == '(' {
 				TS.skip(skip + 1)
 				args, rparen, ok := c.parseMacroArgs(TS)
+				// trc("args=%s rparen=%#U %q ok=%v", toksDump(args), rparen.Ch, rparen.SrcStr(), ok)
 				if !ok {
 					panic(todo(""))
 					// return r
@@ -899,7 +900,7 @@ ret:
 
 // [1], pg 2.
 func (c *cpp) subst(eval bool, m *Macro, IS cppTokens, FP []string, AP []cppTokens, HS hideSet, OS cppTokens) (r cppTokens) {
-	// trc("* %s%v, HS %v, FP %v, AP %v, OS %v (%v)", c.indent(), toksDump(IS), &HS, FP, toksDump(AP), toksDump(OS), origin(2))
+	// trc("* %sIS %v, HS %v, FP %v, AP %v, OS %v (%v)", c.indent(), toksDump(IS), &HS, FP, toksDump(AP), toksDump(OS), origin(2))
 	// defer func() { trc("->%s%v", c.undent(), toksDump(r)) }()
 	var expandedArgs map[int]cppTokens
 more:
@@ -925,9 +926,11 @@ more:
 		}
 	}
 
-	if t.Ch == ' ' && len(IS) != 0 && IS[0].Ch == rune(PPPASTE) {
+	spaceDeleted := false
+	if t.Ch == ' ' && len(IS) != 0 && IS[0].Ch == rune(PPPASTE) { // ' ' "##" -> "##"
 		t = IS[0]
 		IS = IS[1:]
+		spaceDeleted = true
 	}
 	if t.Ch == rune(PPPASTE) {
 		t2, skip := IS.peekNonBlank()
@@ -937,6 +940,16 @@ more:
 				if i >= len(AP) || len(AP[i]) == 0 {
 					//	if select(i,AP ) is {} then /* only if actuals can be empty */
 					//		return subst(IS’,FP,AP,HS,OS );
+					if t2.SrcStr() == "__VA_ARGS__" {
+						if len(OS) != 0 && OS[len(OS)-1].Ch == ',' {
+							//
+							// ... the variable argument is left out when the eprintf macro is used, then
+							// the comma before the ‘##’ will be deleted.
+							//
+							// https://gcc.gnu.org/onlinedocs/gcc-4.9.4/cpp/Variadic-Macros.html
+							OS = OS[:len(OS)-1]
+						}
+					}
 					IS.skip(skip + 1)
 					goto more
 				}
@@ -944,7 +957,17 @@ more:
 				//	else
 				//		return subst(IS’,FP,AP,HS,glue(OS,select(i,AP )));
 				IS = IS[skip+1:]
-				OS = c.glue(OS, c.apSelect(m, t2, AP, i))
+				switch {
+				case t2.SrcStr() == "__VA_ARGS__" && spaceDeleted:
+					if len(OS) != 0 && OS[len(OS)-1].Ch == ',' {
+						OS = append(OS, c.apSelect(m, t2, AP, i)...)
+						break
+					}
+
+					fallthrough
+				default:
+					OS = c.glue(OS, c.apSelect(m, t2, AP, i))
+				}
 				goto more
 			}
 		}
@@ -1332,7 +1355,9 @@ func (c *cpp) apSelectP(m *Macro, t cppToken, AP []cppTokens, i int) *cppTokens 
 	return &r
 }
 
-func (c *cpp) apSelect(m *Macro, t cppToken, AP []cppTokens, i int) cppTokens {
+func (c *cpp) apSelect(m *Macro, t cppToken, AP []cppTokens, i int) (r cppTokens) {
+	// trc("  %s%v %v i=%v (%v: %v:)", c.indent(), &t, toksDump(AP), i, origin(3), origin(2))
+	// defer func() { trc("->%sout %v", c.undent(), toksDump(r)) }()
 	if m.VarArg < 0 || m.VarArg != i {
 		if i < len(AP) {
 			return AP[i]
