@@ -91,7 +91,6 @@ typedef __PTRDIFF_TYPE__ __predefined_ptrdiff_t;
 #define __builtin_huge_vall(x) __builtin_huge_val(x)
 #endif
 
-
 __SIZE_TYPE__ __builtin_strcspn(const char *s, const char *reject);
 __SIZE_TYPE__ __builtin_strlen(const char *s);
 __SIZE_TYPE__ __builtin_strspn(const char *s, const char *accept);
@@ -159,7 +158,9 @@ float __builtin_sinhf(float x);
 float __builtin_sqrtf(float x);
 float __builtin_tanf(float x);
 float __builtin_tanhf(float x);
+int __builtin___snprintf_chk (char *s, __SIZE_TYPE__ maxlen, int flag, __SIZE_TYPE__ os, char *fmt, ...);
 int __builtin___sprintf_chk(char * str, int flag, __SIZE_TYPE__ strlen, char * format, ...);
+int __builtin___vsnprintf_chk(char * s, __SIZE_TYPE__ maxlen, int flag, __SIZE_TYPE__ slen, char * format, __builtin_va_list args);
 int __builtin_abs(int j);
 int __builtin_clz (unsigned int x);
 int __builtin_clzl (unsigned long x);
@@ -203,7 +204,6 @@ int __builtin_vfscanf(void *stream, const char *format, __builtin_va_list ap);
 int __builtin_vprintf(const char *format, __builtin_va_list ap);
 int __builtin_vscanf(const char *format, __builtin_va_list ap);
 int __builtin_vsnprintf(char *str, __SIZE_TYPE__ size, const char *format, __builtin_va_list ap);
-int __builtin___vsnprintf_chk(char * s, __SIZE_TYPE__ maxlen, int flag, __SIZE_TYPE__ slen, char * format, __builtin_va_list args);
 int __builtin_vsprintf(char *str, const char *format, __builtin_va_list ap);
 int __builtin_vsscanf(const char *str, const char *format, __builtin_va_list ap);
 long __builtin_expect(long, long);
@@ -236,6 +236,7 @@ long double __builtin_tanhl(long double x);
 long double __builtin_tanl(long double x);
 long long __builtin_llabs(long long j);
 void *__builtin___memcpy_chk(void * dest, void * src, __SIZE_TYPE__ len, __SIZE_TYPE__ destlen);
+void *__builtin___memmove_chk(void * dest, void * src, __SIZE_TYPE__ len, __SIZE_TYPE__ destlen);
 void *__builtin___memset_chk(void * dest, int c, __SIZE_TYPE__ len, __SIZE_TYPE__ destlen);
 void *__builtin___strncpy_chk (char *dest, char *src, __SIZE_TYPE__ len, __SIZE_TYPE__ dstlen);
 void *__builtin__strncpy_chk (char *dest, char *src, __SIZE_TYPE__ len, __SIZE_TYPE__ dstlen);
