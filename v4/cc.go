@@ -758,20 +758,6 @@ func NodeSource(s ...Node) string {
 	return b.String()
 }
 
-//TODO- func nodeSource2(s ...Node) string {
-//TODO- 	var a []Token
-//TODO- 	for _, n := range s {
-//TODO- 		nodeSource(n, &a)
-//TODO- 	}
-//TODO- 	sort.Slice(a, func(i, j int) bool { return a[i].seq < a[j].seq })
-//TODO- 	var b strings.Builder
-//TODO- 	for _, t := range a {
-//TODO- 		b.Write(t.Sep())
-//TODO- 		b.Write(t.Src())
-//TODO- 	}
-//TODO- 	return b.String()
-//TODO- }
-
 func nodeSource(n Node, a *[]Token) {
 	if n == nil {
 		return

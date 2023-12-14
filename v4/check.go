@@ -1134,6 +1134,10 @@ func (n *Declaration) check(c *ctx) {
 		var alignas int
 		var err error
 		t := n.DeclarationSpecifiers.check(c, &isExtern, &isStatic, &isAtomic, &isThreadLocal, &isConst, &isVolatile, &isInline, &isRegister, &isAuto, &isNoreturn, &isRestrict, &alignas)
+		if t == nil {
+			return
+		}
+
 		dsa := t.Attributes()
 		attr := n.AttributeSpecifierList.check(c)
 		asa := attr

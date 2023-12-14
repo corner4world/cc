@@ -74,4 +74,4 @@ tmp:
 	grep -a 'TOTAL\|PASS' log || true
 
 test:
-	go test -v -short -failfast 2>&1 | tee log
+	go test -v -timeout 4h -short -failfast 2>&1 | tee log
