@@ -91,6 +91,7 @@ func newCtx(ast *AST, cfg *Config) *ctx {
 	longlong := c.newPredefinedType(LongLong)
 	short := c.newPredefinedType(Short)
 	uint := c.newPredefinedType(UInt)
+	int128 := c.newPredefinedType(Int128)
 	uint128 := c.newPredefinedType(UInt128)
 	ulong := c.newPredefinedType(ULong)
 	ulonglog := c.newPredefinedType(ULongLong)
@@ -137,8 +138,9 @@ func newCtx(ast *AST, cfg *Config) *ctx {
 		ts2String([]TypeSpecifierCase{TypeSpecifierInt, TypeSpecifierShort}):                                          short,
 		ts2String([]TypeSpecifierCase{TypeSpecifierInt, TypeSpecifierSigned}):                                         int,
 		ts2String([]TypeSpecifierCase{TypeSpecifierInt, TypeSpecifierUnsigned}):                                       uint,
+		ts2String([]TypeSpecifierCase{TypeSpecifierInt128, TypeSpecifierSigned}):                                      int128,
 		ts2String([]TypeSpecifierCase{TypeSpecifierInt128, TypeSpecifierUnsigned}):                                    uint128,
-		ts2String([]TypeSpecifierCase{TypeSpecifierInt128}):                                                           c.newPredefinedType(Int128),
+		ts2String([]TypeSpecifierCase{TypeSpecifierInt128}):                                                           int128,
 		ts2String([]TypeSpecifierCase{TypeSpecifierInt}):                                                              int,
 		ts2String([]TypeSpecifierCase{TypeSpecifierLong, TypeSpecifierLong, TypeSpecifierSigned}):                     longlong,
 		ts2String([]TypeSpecifierCase{TypeSpecifierLong, TypeSpecifierLong, TypeSpecifierUnsigned}):                   ulonglog,
