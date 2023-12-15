@@ -1354,9 +1354,9 @@ func TestTranslate(t *testing.T) {
 	case "linux/loong64":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 		blacklistGCC["20101011-1.c"] = struct{}{}
-		blacklistGCC["ieee/fp-cmp-1.c"] = struct{}{}
-		blacklistGCC["ieee/fp-cmp-2.c"] = struct{}{}
-		blacklistGCC["ieee/fp-cmp-3.c"] = struct{}{}
+		blacklistGCC["fp-cmp-1.c"] = struct{}{}
+		blacklistGCC["fp-cmp-2.c"] = struct{}{}
+		blacklistGCC["fp-cmp-3.c"] = struct{}{}
 	case "windows/arm64":
 		blacklistGCC["pr49218.c"] = struct{}{}     //TODO
 		blacklistGCC["pr54471.c"] = struct{}{}     //TODO
