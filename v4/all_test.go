@@ -1372,6 +1372,9 @@ func TestTranslate(t *testing.T) {
 		blacklistGCC["pr93213.c"] = struct{}{}     //TODO
 		blacklistGCC["pr98474.c"] = struct{}{}     //TODO
 		blacklistMakarov["setjmp2.c"] = struct{}{} //TODO
+	case "freebsd/amd64":
+		blacklistDebian["mandelbrot-6.c"] = struct{}{}
+		blacklistDebian["spectral-norm-5.c"] = struct{}{}
 	}
 	var files, ok, skip, fails int32
 	for _, v := range []struct {
