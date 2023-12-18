@@ -2720,3 +2720,27 @@ void f() {
 		t.Fatal(err)
 	}
 }
+
+func TestSingleBytewchar(t *testing.T) {
+	const src = "#include <stddef.h>\nwchar_t *c = L\"!\";\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+	sources := []Source{
+		{Name: "<predefined>", Value: `#define __WCHAR_TYPE__ unsigned char`}, // set wchar_t to 8 bits
+		{Name: "<builtin>", Value: `int __predefined_declarator;`},            // Just to test without wchar_t definition
+		{Name: "test.h", Value: src},
+	}
+	var ast *AST
+	if ast, err = Translate(cfg, sources); err != nil {
+		t.Fatalf("unexpected Translate error: %v", err)
+	}
+	var out Node
+	d := 100
+	findNode("PrimaryExpression", ast.TranslationUnit, 0, &out, &d)
+	pe := out.(*PrimaryExpression)
+	if _, ok := pe.Value().(StringValue); !ok {
+		t.Fatalf("value should be of type StringValue, but was of type %T", pe.Value())
+	}
+}

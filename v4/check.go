@@ -1388,6 +1388,14 @@ func (n *Initializer) checkArray(c *ctx, currObj Type, t *ArrayType, exprT Type,
 		// unknown size) initialize the elements of the array.
 		if IsIntegerType(x) && x.Size() == c.wcharT(n).Size() {
 			switch x := v.(type) {
+			case StringValue:
+				if t.IsIncomplete() {
+					t.elems = int64(len(x))
+				}
+				if max, sz := t.Len(), int64(len(x)); sz > max {
+					n.val = x[:max]
+				}
+				return r
 			case UTF16StringValue:
 				if t.IsIncomplete() {
 					t.elems = int64(len(x))
@@ -5025,6 +5033,9 @@ func (n *PrimaryExpression) stringConst(c *ctx) (v Value, t Type) {
 		return StringValue(s), c.newArrayType(c.ast.kinds[Char], int64(len(s)), nil)
 	case PrimaryExpressionLString:
 		switch t = c.wcharT(n); t.Size() {
+		case 1:
+			v := StringValue(s)
+			return v, c.newArrayType(t, int64(len(s)), nil)
 		case 2:
 			v := UTF16StringValue(utf16.Encode([]rune(s)))
 			return v, c.newArrayType(t, int64(len(v)), nil)
