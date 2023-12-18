@@ -2728,8 +2728,8 @@ func TestSingleBytewchar(t *testing.T) {
 		t.Fatalf("failed to create new config: %v", err)
 	}
 	sources := []Source{
-		{Name: "<predefined>", Value: `#define __WCHAR_TYPE__ unsigned char`}, // set wchar_t to 8 bits
-		{Name: "<builtin>", Value: `int __predefined_declarator;`},            // Just to test without wchar_t definition
+		{Name: "<predefined>", Value: cfg.Predefined + "\n#undef __WCHAR_TYPE__\n#define __WCHAR_TYPE__ unsigned char"}, // set wchar_t to 8 bits
+		{Name: "<builtin>", Value: `int __predefined_declarator;`},                                                      // Just to test without wchar_t definition
 		{Name: "test.h", Value: src},
 	}
 	var ast *AST
