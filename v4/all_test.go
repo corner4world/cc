@@ -40,6 +40,7 @@ var (
 	defaultCfg0 *Config
 	re          *regexp.Regexp
 	totalRam    = memory.TotalMemory()
+	makeJ       = fmt.Sprintf("-j%d", runtime.GOMAXPROCS(-1))
 	_           = stack
 
 	oTrace = flag.Bool("trc", false, "Print tested paths.")
@@ -1902,11 +1903,11 @@ func testMake(t *testing.T, archive, dir string, mcfg *makeCfg) (files, ok, skip
 	}
 	switch goos {
 	case "darwin", "freebsd", "netbsd", "openbsd":
-		if _, err := shell("gmake"); err != nil {
+		if _, err := shell("gmake", makeJ); err != nil {
 			t.Skipf("SKIP: gmake: %v", err)
 		}
 	default:
-		if _, err := shell("make"); err != nil {
+		if _, err := shell("make", makeJ); err != nil {
 			t.Skipf("SKIP: make: %v", err)
 		}
 	}
