@@ -2342,11 +2342,23 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			c.errors.add(errorf("%s not supported on %s/%s", r, c.ast.ABI.goos, c.ast.ABI.goarch))
 			r = Invalid
 		}
+		var err error
 		attr = volatileAttr(attr, *isVolatile)
 		if attr != nil {
-			var err error
 			if r, err = mergeAttr(r, attr); err != nil {
 				c.errors.add(errorf("%v", err))
+			}
+		}
+		if *isConst {
+			switch a := r.Attributes(); {
+			case a == nil:
+				a := &Attributes{}
+				a.setIsConst(true)
+				if r, err = mergeAttr(r, a); err != nil {
+					c.errors.add(errorf("%v", err))
+				}
+			default:
+				a.setIsConst(true)
 			}
 		}
 		n.typ = r
@@ -2642,12 +2654,11 @@ func (n *FunctionSpecifier) check(c *ctx, isInline, isNoreturn *bool) {
 // TypeQualifier:
 //
 //	"const"          // Case TypeQualifierConst
-//
-// |       "restrict"       // Case TypeQualifierRestrict
-// |       "volatile"       // Case TypeQualifierVolatile
-// |       "_Atomic"        // Case TypeQualifierAtomic
-// |       "_Nonnull"       // Case TypeQualifierNonnull
-// |       "__attribute__"  // Case TypeQualifierAttr
+//	|       "restrict"       // Case TypeQualifierRestrict
+//	|       "volatile"       // Case TypeQualifierVolatile
+//	|       "_Atomic"        // Case TypeQualifierAtomic
+//	|       "_Nonnull"       // Case TypeQualifierNonnull
+//	|       "__attribute__"  // Case TypeQualifierAttr
 func (n *TypeQualifier) check(c *ctx, isConst, isVolatile, isAtomic, isRestrict *bool) (r *Attributes) {
 	switch n.Case {
 	case TypeQualifierConst: // "const"
@@ -4249,9 +4260,14 @@ func (n *CastExpression) check(c *ctx, mode flags) (r Type) {
 }
 
 func (n *TypeName) check(c *ctx) (r Type) {
-	var dummy bool
+	var dummy, isConst bool
 	var dummyInt int
-	n.typ = n.AbstractDeclarator.check(c, n.SpecifierQualifierList.check(c, &dummy, &dummy, &dummy, &dummy, &dummyInt))
+	n.typ = n.AbstractDeclarator.check(c, n.SpecifierQualifierList.check(c, &dummy, &isConst, &dummy, &dummy, &dummyInt))
+	if isConst {
+		a := &Attributes{}
+		a.setIsConst(true)
+		n.typ, _ = mergeAttr(n.typ, a)
+	}
 	return n.Type()
 }
 
@@ -4889,7 +4905,7 @@ func (n *GenericAssociationList) check(c *ctx, mode flags, ctrl Type, p *purer, 
 	for ; n != nil; n = n.GenericAssociationList {
 		switch assoc = n.GenericAssociation; assoc.Case {
 		case GenericAssociationType: // TypeName ':' AssignmentExpression
-			if t := assoc.TypeName.check(c); ctrl.IsCompatible(t) {
+			if t := assoc.TypeName.check(c); ctrl.isGenericAssociationCompatible(t) {
 				r = assoc.AssignmentExpression.check(c, decay)
 				*v = assoc.AssignmentExpression.Value()
 				p.setPure(assoc.AssignmentExpression.Pure())

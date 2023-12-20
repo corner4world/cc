@@ -261,6 +261,7 @@ type Type interface {
 	setAttr(*Attributes) Type
 	setName(d *Declarator) Type
 	str(b *strings.Builder, useTag bool) *strings.Builder
+	isGenericAssociationCompatible(Type) bool
 }
 
 func mergeAttr(t Type, a *Attributes) (r Type, err error) {
@@ -330,7 +331,8 @@ func (n *InvalidType) Typedef() *Declarator { return nil }
 // setName implements Type.
 func (n *InvalidType) setName(*Declarator) Type { return n }
 
-func (n *InvalidType) IsCompatible(Type) bool { return false }
+func (n *InvalidType) IsCompatible(Type) bool                     { return false }
+func (n *InvalidType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
 
 // String implements Type.
 func (n *InvalidType) String() string { return "<invalid type>" }
@@ -422,6 +424,10 @@ func (n *PredefinedType) IsCompatible(t Type) bool {
 	default:
 		return false
 	}
+}
+
+func (n *PredefinedType) isGenericAssociationCompatible(t Type) bool {
+	return n.IsCompatible(t) && n.Attributes().isConst() == t.Attributes().isConst()
 }
 
 // setName implements Type.
@@ -674,6 +680,8 @@ func (n *FunctionType) IsCompatible(t Type) bool {
 	}
 }
 
+func (n *FunctionType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+
 // setName implements Type.
 func (n *FunctionType) setName(d *Declarator) Type {
 	r := *n
@@ -808,6 +816,21 @@ func (n *PointerType) IsCompatible(t Type) bool {
 		return n == x || n.Elem().IsCompatible(x.Elem())
 	case *UnionType:
 		return x.IsCompatible(n)
+	default:
+		return false
+	}
+}
+
+func (n *PointerType) isGenericAssociationCompatible(t Type) (r bool) {
+	if n == t {
+		return true
+	}
+
+	switch x := t.(type) {
+	case *PointerType:
+		return n == x || n.Attributes().isConst() == x.Attributes().isConst() && n.Elem().isGenericAssociationCompatible(x.Elem())
+	case *UnionType:
+		return x.isGenericAssociationCompatible(n)
 	default:
 		return false
 	}
@@ -1123,6 +1146,8 @@ func (n *structType) IsCompatible(m *structType) bool {
 	return true
 }
 
+// func (n *structType) isGenericAssociationCompatible(m *structType) bool { return n.IsCompatible(m) }
+
 // NumFields reports the number of n's fields.
 func (n *structType) NumFields() int { return len(n.fields) }
 
@@ -1306,6 +1331,8 @@ func (n *StructType) IsCompatible(t Type) bool {
 		return false
 	}
 }
+
+func (n *StructType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
 
 // setName implements Type.
 func (n *StructType) setName(d *Declarator) Type {
@@ -1566,6 +1593,8 @@ func (n *UnionType) IsCompatible(t Type) bool {
 	}
 }
 
+func (n *UnionType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+
 // setName implements Type.
 func (n *UnionType) setName(d *Declarator) Type {
 	r := *n
@@ -1793,6 +1822,8 @@ func (n *ArrayType) IsCompatible(t Type) bool {
 		return false
 	}
 }
+
+func (n *ArrayType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
 
 // setName implements Type.
 func (n *ArrayType) setName(d *Declarator) Type {
@@ -2036,6 +2067,8 @@ func (n *EnumType) IsCompatible(t Type) bool {
 		return false
 	}
 }
+
+func (n *EnumType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
 
 // setName implements Type.
 func (n *EnumType) setName(d *Declarator) Type {
@@ -2447,6 +2480,7 @@ type Attributes struct {
 
 	alwaysInline bool // __attribute__ ((__always_inline__))
 	gnuInline    bool // __attribute__ ((__gnu_inline__))
+	hasConst     bool
 	isNonZero    bool
 	isVolatile   bool
 	weak         bool
@@ -2480,6 +2514,11 @@ func (n *Attributes) setCustom(attr string, v []Value) {
 func (n *Attributes) setIsVolatile(v bool) {
 	v, n.isVolatile = n.isVolatile, v
 	n.isNonZero = v != n.isVolatile
+}
+
+func (n *Attributes) setIsConst(v bool) {
+	v, n.hasConst = n.hasConst, v
+	n.isNonZero = v != n.hasConst
 }
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
@@ -2656,6 +2695,8 @@ func (n *Attributes) AlwaysInline() bool { return n != nil && n.alwaysInline }
 
 // IsVolatile reports if a type is qualified by the 'volatile' keyword.
 func (n *Attributes) IsVolatile() bool { return n != nil && n.isVolatile }
+
+func (n *Attributes) isConst() bool { return n != nil && n.hasConst }
 
 // Alias returns S from __attribute__((alias("S"))) or "" if not present.
 func (n *Attributes) Alias() string { return n.alias }
