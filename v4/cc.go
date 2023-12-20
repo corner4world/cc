@@ -10,6 +10,8 @@
 //go:generate stringer -output stringer.go -linecomment -type=tokCh,Kind,Linkage,StorageDuration
 //go:generate sh -c "go test -run ^Example |fe"
 
+//TODO +libxml2
+
 // Package cc is a C99 compiler front end.
 //
 // # Online documentation

@@ -297,13 +297,13 @@ func (c *ctx) checkScope(s *Scope) {
 					}
 				}
 				isStatic := false
-				for _, v := range ds {
+				for _, v := range ds[1:] {
 					if v.IsStatic() {
 						isStatic = true
 						break
 					}
 				}
-				for _, v := range ds {
+				for _, v := range ds[1:] {
 					v.isStatic = isStatic
 					var err error
 					if t, err = mergeAttr(t, v.Type().Attributes()); err != nil {

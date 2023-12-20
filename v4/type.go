@@ -2571,11 +2571,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	}
 
 	switch {
-	case n.aligned < 0 && m.aligned < 0:
+	case n.aligned <= 0 && m.aligned <= 0:
 		r.aligned = -1
-	case n.aligned < 0 && m.aligned >= 0:
+	case n.aligned <= 0 && m.aligned > 0:
 		r.aligned = m.aligned
-	case n.aligned >= 0 && m.aligned < 0:
+	case n.aligned > 0 && m.aligned <= 0:
 		r.aligned = n.aligned
 	default:
 		if n.aligned != m.aligned {

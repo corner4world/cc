@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -23,6 +24,8 @@ import (
 var (
 	extendedErrors bool // true: Errors will include origin info.
 )
+
+func stack() []byte { return debug.Stack() }
 
 // origin returns caller's short position, skipping skip frames.
 func origin(skip int) string {

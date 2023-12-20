@@ -64,8 +64,6 @@ func init() {
 
 }
 
-func stack() []byte { return debug.Stack() }
-
 func walk(dir string, f func(pth string, fi os.FileInfo) error) error {
 	fis, err := cfs.ReadDir(dir)
 	if err != nil {
