@@ -2723,6 +2723,7 @@ void f() {
 }
 
 func TestSingleBytewchar(t *testing.T) {
+	t.Skip("TODO see https://gitlab.com/cznic/cc/-/issues/162#note_1702360770")
 	const src = "#include <stddef.h>\nwchar_t *c = L\"!\";\n"
 	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
