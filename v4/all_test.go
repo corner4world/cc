@@ -2921,6 +2921,7 @@ func TestSingleBytewchar(t *testing.T) {
 		"netbsd/386",
 		"netbsd/amd64",
 		"netbsd/armv7",
+		"openbsd/386",
 		"openbsd/amd64",
 		"windows/386",
 		"windows/amd64":
