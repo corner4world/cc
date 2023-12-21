@@ -42,6 +42,9 @@ var (
 	totalRam    = memory.TotalMemory()
 	makeJ       = fmt.Sprintf("-j%d", runtime.GOMAXPROCS(-1))
 	_           = stack
+	goos        = runtime.GOOS
+	goarch      = runtime.GOARCH
+	target      = fmt.Sprintf("%s/%s", goos, goarch)
 
 	oTrace = flag.Bool("trc", false, "Print tested paths.")
 )
@@ -1830,15 +1833,9 @@ func TestMake(t *testing.T) {
 	t.Logf("TOTAL: files %v, skip %v, ok %v, fails %v", files, skip, ok, fails)
 }
 
-var (
-	goos   = runtime.GOOS
-	goarch = runtime.GOARCH
-	osarch = fmt.Sprintf("%s/%s", goos, goarch)
-)
-
 func filter(f []string) bool {
 	for _, v := range f {
-		if v == goos || v == goarch || v == osarch {
+		if v == goos || v == goarch || v == target {
 			return true
 		}
 	}
@@ -2916,21 +2913,46 @@ void f() {
 }
 
 func TestSingleBytewchar(t *testing.T) {
-	t.Skip("TODO see https://gitlab.com/cznic/cc/-/issues/162#note_1702360770")
-	const src = "#include <stddef.h>\nwchar_t *c = L\"!\";\n"
+	switch target {
+	case
+		"freebsd/386",
+		"freebsd/amd64",
+		"freebsd/arm64",
+		"netbsd/386",
+		"netbsd/amd64",
+		"netbsd/armv7",
+		"openbsd/amd64",
+		"windows/386",
+		"windows/amd64":
+
+		t.Skip("TODO")
+	}
+
+	const src = `
+#include <stddef.h>
+wchar_t *c = L"!";
+`
 	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		t.Fatalf("failed to create new config: %v", err)
 	}
 	sources := []Source{
-		{Name: "<predefined>", Value: cfg.Predefined + "\n#undef __WCHAR_TYPE__\n#define __WCHAR_TYPE__ unsigned char"}, // set wchar_t to 8 bits
-		{Name: "<builtin>", Value: `int __predefined_declarator;`},                                                      // Just to test without wchar_t definition
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<predefined2>", Value: `
+#define __WCHAR_MAX__ 0xff
+#define __WCHAR_MIN__ 0
+#define __WCHAR_WIDTH__ 8
+#define __WCHAR_TYPE__ unsigned char
+#define __SIZEOF_WCHAR_T__ 1
+`},
+		{Name: "<builtin>", Value: `int __predefined_declarator;`},
 		{Name: "test.h", Value: src},
 	}
 	var ast *AST
 	if ast, err = Translate(cfg, sources); err != nil {
 		t.Fatalf("unexpected Translate error: %v", err)
 	}
+
 	var out Node
 	d := 100
 	findNode("PrimaryExpression", ast.TranslationUnit, 0, &out, &d)
