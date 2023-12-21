@@ -362,10 +362,10 @@ func NewConfig(goos, goarch string, opts ...string) (r *Config, err error) {
 	r = &Config{
 		ABI:                 abi,
 		CC:                  cc,
-		Predefined:          predefined,
 		HostIncludePaths:    includePaths,
 		HostSysIncludePaths: sysIncludePaths,
 		IncludePaths:        append([]string{""}, append(includePaths, sysIncludePaths...)...),
+		Predefined:          predefined,
 		SysIncludePaths:     sysIncludePaths,
 		keywords:            keywords,
 	}

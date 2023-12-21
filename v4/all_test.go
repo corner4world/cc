@@ -2286,6 +2286,195 @@ func TestIssue149(t *testing.T) {
 	}
 }
 
+func TestConst0(t *testing.T) {
+	const src = "int i;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	if g, e := d.IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestConst1(t *testing.T) {
+	const src = "const int i;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	t.Log(d.Type())
+	if g, e := d.IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestConst2(t *testing.T) {
+	const src = "const int *p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
+	if g, e := d.IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestConst3(t *testing.T) {
+	const src = "int * const p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
+	if g, e := d.IsConst(), true; g != e {
+		t.Error(g, e) //TODO
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), true; g != e {
+		t.Error(g, e) //TODO
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestConst4(t *testing.T) {
+	const src = "const int * const p;\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
+	if g, e := d.IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*PointerType).Elem().Attributes().IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
+func TestConst5(t *testing.T) {
+	const src = "const int *p[];\n"
+	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		t.Fatalf("failed to create new config: %v", err)
+	}
+
+	sources := []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "test.h", Value: src},
+	}
+
+	ast, err := Translate(cfg, sources)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+
+	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
+	if g, e := d.IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().Attributes().IsConst(), false; g != e {
+		t.Error(g, e)
+	}
+
+	if g, e := d.Type().(*ArrayType).Elem().Attributes().IsConst(), true; g != e {
+		t.Error(g, e)
+	}
+}
+
 func TestVolatile0(t *testing.T) {
 	const src = "int i;\n"
 	cfg, err := NewConfig(runtime.GOOS, runtime.GOARCH)
@@ -2305,6 +2494,7 @@ func TestVolatile0(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), false; g != e {
 		t.Error(g, e)
 	}
@@ -2333,6 +2523,7 @@ func TestVolatile1(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["i"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), true; g != e {
 		t.Error(g, e)
 	}
@@ -2361,6 +2552,7 @@ func TestVolatile2(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), false; g != e {
 		t.Error(g, e)
 	}
@@ -2393,6 +2585,7 @@ func TestVolatile3(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), true; g != e {
 		t.Error(g, e) //TODO
 	}
@@ -2425,6 +2618,7 @@ func TestVolatile4(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), true; g != e {
 		t.Error(g, e)
 	}
@@ -2457,6 +2651,7 @@ func TestVolatile5(t *testing.T) {
 	}
 
 	d := ast.Scope.Nodes["p"][0].(*Declarator)
+	t.Log(d.Type())
 	if g, e := d.IsVolatile(), false; g != e {
 		t.Error(g, e)
 	}

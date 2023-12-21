@@ -1161,7 +1161,7 @@ func (n *Declaration) check(c *ctx) {
 					d.Type().Attributes().setVisibilityDecl(d)
 				}
 			}
-			d.fixVolatile(c)
+			d.fixVolatileAndConst(c)
 			if dsa != nil && d.Pointer != nil && asa == nil {
 				d.fixPointerAttr(c)
 			}
@@ -2022,7 +2022,7 @@ func (n *Declarator) fixPointerAttr(c *ctx) {
 	}
 }
 
-func (n *Declarator) fixVolatile(c *ctx) {
+func (n *Declarator) fixVolatileAndConst(c *ctx) {
 	switch {
 	case n.IsVolatile() && n.Pointer == nil:
 		if n.Type().Attributes().IsVolatile() {
@@ -2057,6 +2057,45 @@ func (n *Declarator) fixVolatile(c *ctx) {
 		// int *volatile p;
 		n.isVolatile = true
 		attr := volatileAttr(n.Type().Attributes(), true)
+		n.typ, _ = mergeAttr(n.Type(), attr)
+	}
+
+	switch {
+	case n.IsConst() && n.Pointer == nil:
+		if n.Type().Attributes().IsConst() {
+			break
+		}
+
+		attr := constAttr(n.Type().Attributes(), true)
+		n.typ = n.Type().setAttr(attr)
+	case n.IsConst() && n.Pointer != nil && !n.Pointer.TypeQualifiers.isConst():
+		// const int *p;
+		n.isConst = false
+		switch x := n.Type().(type) {
+		case *PointerType:
+			if x.attributer.p != nil {
+				x.attributer.p.isConst = false
+			}
+			el := x.Elem()
+			attr := constAttr(el.Attributes(), true)
+			el.setAttr(attr)
+		case *ArrayType:
+			if x.attributer.p != nil {
+				x.attributer.p.isConst = false
+			}
+			el := x.Elem()
+			attr := constAttr(el.Attributes(), true)
+			el = el.setAttr(attr)
+			x.elem.typ = el
+		case *FunctionType:
+			// nop
+		default:
+			c.errors.add(errorf("TODO %v: %T", n.Position(), x))
+		}
+	case !n.IsConst() && n.Pointer != nil && n.Pointer.TypeQualifiers.isConst():
+		// int *const p;
+		n.isConst = true
+		attr := constAttr(n.Type().Attributes(), true)
 		n.typ, _ = mergeAttr(n.Type(), attr)
 	}
 }
@@ -2313,6 +2352,18 @@ func volatileAttr(attr *Attributes, isVolatile bool) *Attributes {
 	return attr
 }
 
+func constAttr(attr *Attributes, isConst bool) *Attributes {
+	if !isConst {
+		return attr
+	}
+
+	if attr == nil {
+		attr = &Attributes{}
+	}
+	attr.setIsConst(true)
+	return attr
+}
+
 // DeclarationSpecifiers:
 //
 //	StorageClassSpecifier DeclarationSpecifiers  // Case DeclarationSpecifiersStorage
@@ -2349,16 +2400,10 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 				c.errors.add(errorf("%v", err))
 			}
 		}
-		if *isConst {
-			switch a := r.Attributes(); {
-			case a == nil:
-				a := &Attributes{}
-				a.setIsConst(true)
-				if r, err = mergeAttr(r, a); err != nil {
-					c.errors.add(errorf("%v", err))
-				}
-			default:
-				a.setIsConst(true)
+		attr = constAttr(attr, *isConst)
+		if attr != nil {
+			if r, err = mergeAttr(r, attr); err != nil {
+				c.errors.add(errorf("%v", err))
 			}
 		}
 		n.typ = r
@@ -2371,7 +2416,7 @@ func (n *DeclarationSpecifiers) check(c *ctx, isExtern, isStatic, isAtomic, isTh
 			n.StorageClassSpecifier.check(c, isExtern, isStatic, isThreadLocal, isRegister, isAuto)
 		case DeclarationSpecifiersTypeSpec: // TypeSpecifier DeclarationSpecifiers
 			ts = append(ts, n.TypeSpecifier.Case)
-			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile)
+			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile, *isConst)
 		case DeclarationSpecifiersTypeQual: // TypeQualifier DeclarationSpecifiers
 			if attr := n.TypeQualifier.check(c, isConst, isVolatile, isAtomic, isRestrict); attr != nil {
 				attrs = append(attrs, attr)
@@ -2743,7 +2788,7 @@ func (n *StorageClassSpecifier) check(c *ctx, isExtern, isStatic, isThreadLocal,
 // |       "_Float64"                       // Case TypeSpecifierFloat64
 // |       "_Float32x"                      // Case TypeSpecifierFloat32x
 // |       "_Float64x"                      // Case TypeSpecifierFloat64x
-func (n *TypeSpecifier) check(c *ctx, isAtomic *bool, isVolatile bool) (r Type) {
+func (n *TypeSpecifier) check(c *ctx, isAtomic *bool, isVolatile, isConst bool) (r Type) {
 	if n == nil {
 		return Invalid
 	}
@@ -2790,7 +2835,7 @@ func (n *TypeSpecifier) check(c *ctx, isAtomic *bool, isVolatile bool) (r Type) 
 	case TypeSpecifierImaginary: // "_Imaginary"
 		c.errors.add(errorf("TODO %v", n.Case))
 	case TypeSpecifierStructOrUnion: // StructOrUnionSpecifier
-		return n.StructOrUnionSpecifier.check(c, isVolatile)
+		return n.StructOrUnionSpecifier.check(c, isVolatile, isConst)
 	case TypeSpecifierEnum: // EnumSpecifier
 		return n.EnumSpecifier.check(c)
 	case TypeSpecifierTypeName: // TYPENAME
@@ -2942,7 +2987,7 @@ func (n *Enumerator) check(c *ctx, iota int64) int64 {
 //	StructOrUnion IDENTIFIER '{' StructDeclarationList '}'  // Case StructOrUnionSpecifierDef
 //
 // |       StructOrUnion IDENTIFIER                                // Case StructOrUnionSpecifierTag
-func (n *StructOrUnionSpecifier) check(c *ctx, isVolatile bool) (r Type) {
+func (n *StructOrUnionSpecifier) check(c *ctx, isVolatile, isConst bool) (r Type) {
 	if n == nil {
 		return Invalid
 	}
@@ -2971,7 +3016,7 @@ func (n *StructOrUnionSpecifier) check(c *ctx, isVolatile bool) (r Type) {
 			n.typ = c.newStructType(n.LexicalScope(), tag, nil, -1, 1, attr)
 		}
 
-		n.StructDeclarationList.check(c, n, isVolatile)
+		n.StructDeclarationList.check(c, n, isVolatile, isConst)
 	case StructOrUnionSpecifierTag: // StructOrUnion IDENTIFIER
 		if x := n.LexicalScope().structOrUnion(n.Token); x != nil {
 			if n.StructOrUnion.Case != x.StructOrUnion.Case {
@@ -3019,7 +3064,7 @@ func (n *StructOrUnionSpecifier) check(c *ctx, isVolatile bool) (r Type) {
 //	StructDeclaration
 //
 // |       StructDeclarationList StructDeclaration
-func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier, isVolatile bool) {
+func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier, isVolatile, isConst bool) {
 	defer func() {
 		if s.typ == nil || s.typ == Invalid {
 			c.errors.add(errorf("TODO %T missed/failed type check", n))
@@ -3030,7 +3075,7 @@ func (n *StructDeclarationList) check(c *ctx, s *StructOrUnionSpecifier, isVolat
 	// defer trc("==== (Z) %v: %s", n.Position(), NodeSource(n))
 	var fields []*Field
 	for l := n; l != nil; l = l.StructDeclarationList {
-		fields = append(fields, l.StructDeclaration.check(c, isVolatile)...)
+		fields = append(fields, l.StructDeclaration.check(c, isVolatile, isConst)...)
 	}
 	for i, f := range fields {
 		f.index = i
@@ -3314,12 +3359,13 @@ func (n *StructDeclarationList) checkStruct(c *ctx, a *fieldAllocator, s []*Fiel
 	}
 }
 
-func (n *StructDeclaration) check(c *ctx, isVolatile0 bool) (r []*Field) {
+func (n *StructDeclaration) check(c *ctx, isVolatile0, isConst0 bool) (r []*Field) {
 	switch n.Case {
 	case StructDeclarationDecl: // DeclarationSpecifiers InitDeclaratorList AttributeSpecifierList ';'
 		var isAtomic, isConst, isVolatile, isRestrict bool
 		var alignas int
 		isVolatile = isVolatile0
+		isConst = isConst0
 		t := n.SpecifierQualifierList.check(c, &isAtomic, &isConst, &isVolatile, &isRestrict, &alignas)
 		switch {
 		case n.StructDeclaratorList == nil:
@@ -3378,7 +3424,7 @@ func (n *SpecifierQualifierList) check(c *ctx, isAtomic, isConst, isVolatile, is
 		switch n.Case {
 		case SpecifierQualifierListTypeSpec: // TypeSpecifier SpecifierQualifierList
 			ts = append(ts, n.TypeSpecifier.Case)
-			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile)
+			r = n.TypeSpecifier.check(c, isAtomic, *isVolatile, *isConst)
 		case SpecifierQualifierListTypeQual: // TypeQualifier SpecifierQualifierList
 			if attr := n.TypeQualifier.check(c, isConst, isVolatile, isAtomic, isRestrict); attr != nil {
 				attrs = append(attrs, attr)
@@ -3469,7 +3515,7 @@ func (n *StructDeclarator) check(c *ctx, t Type, isAtomic, isConst, isVolatile, 
 		n.Declarator.isVolatile = isVolatile
 		n.Declarator.isRestrict = isRestrict
 		defer func() {
-			n.Declarator.fixVolatile(c)
+			n.Declarator.fixVolatileAndConst(c)
 			r.typ.typ = n.Declarator.Type()
 		}()
 	}
@@ -3828,7 +3874,7 @@ func (n *InclusiveOrExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3867,7 +3913,7 @@ func (n *ExclusiveOrExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3906,7 +3952,7 @@ func (n *AndExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -3946,7 +3992,7 @@ func (n *EqualityExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4004,7 +4050,7 @@ func (n *RelationalExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4061,7 +4107,7 @@ func (n *ShiftExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4092,14 +4138,15 @@ func (n *ShiftExpression) check(c *ctx, mode flags) (r Type) {
 	return n.Type()
 }
 
-func (c *ctx) notVolatile(n Node, t Type) Type {
+func (c *ctx) notVolatileNotConst(n Node, t Type) Type {
 	attr := t.Attributes()
-	if attr == nil || !attr.IsVolatile() {
+	if attr == nil || (!attr.IsVolatile() && !attr.IsConst()) {
 		return t
 	}
 
 	a := *attr
 	a.isVolatile = false
+	a.isConst = false
 	return t.setAttr(&a)
 }
 
@@ -4120,7 +4167,7 @@ func (n *AdditiveExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4191,7 +4238,7 @@ func (n *MultiplicativeExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		n.typ = c.notVolatile(n, n.Type())
+		n.typ = c.notVolatileNotConst(n, n.Type())
 		n.eval(c, mode)
 	}()
 
@@ -4263,11 +4310,6 @@ func (n *TypeName) check(c *ctx) (r Type) {
 	var dummy, isConst bool
 	var dummyInt int
 	n.typ = n.AbstractDeclarator.check(c, n.SpecifierQualifierList.check(c, &dummy, &isConst, &dummy, &dummy, &dummyInt))
-	if isConst {
-		a := &Attributes{}
-		a.setIsConst(true)
-		n.typ, _ = mergeAttr(n.typ, a)
-	}
 	return n.Type()
 }
 
@@ -4902,10 +4944,14 @@ func (n *GenericAssociationList) check(c *ctx, mode flags, ctrl Type, p *purer, 
 	p.setPure(true)
 	n0 := n
 	var deflt *GenericAssociation
+	// trc("==== %v: ctrl=%s", n.Position(), ctrl)
 	for ; n != nil; n = n.GenericAssociationList {
 		switch assoc = n.GenericAssociation; assoc.Case {
 		case GenericAssociationType: // TypeName ':' AssignmentExpression
-			if t := assoc.TypeName.check(c); ctrl.isGenericAssociationCompatible(t) {
+			t := assoc.TypeName.check(c)
+			// trc("assoc t=%s", t)
+			if ctrl.isGenericAssociationCompatible(t) {
+				// trc("FOUND")
 				r = assoc.AssignmentExpression.check(c, decay)
 				*v = assoc.AssignmentExpression.Value()
 				p.setPure(assoc.AssignmentExpression.Pure())

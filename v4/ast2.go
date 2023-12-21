@@ -280,3 +280,13 @@ func (n *TypeQualifiers) isVolatile() bool {
 	}
 	return false
 }
+
+func (n *TypeQualifiers) isConst() bool {
+	for ; n != nil; n = n.TypeQualifiers {
+		switch n.TypeQualifier.Case {
+		case TypeQualifierConst:
+			return true
+		}
+	}
+	return false
+}

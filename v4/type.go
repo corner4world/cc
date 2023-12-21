@@ -261,7 +261,7 @@ type Type interface {
 	setAttr(*Attributes) Type
 	setName(d *Declarator) Type
 	str(b *strings.Builder, useTag bool) *strings.Builder
-	isGenericAssociationCompatible(Type) bool
+	isGenericAssociationCompatible(assoc Type) bool
 }
 
 func mergeAttr(t Type, a *Attributes) (r Type, err error) {
@@ -331,8 +331,8 @@ func (n *InvalidType) Typedef() *Declarator { return nil }
 // setName implements Type.
 func (n *InvalidType) setName(*Declarator) Type { return n }
 
-func (n *InvalidType) IsCompatible(Type) bool                     { return false }
-func (n *InvalidType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *InvalidType) IsCompatible(Type) bool                         { return false }
+func (n *InvalidType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // String implements Type.
 func (n *InvalidType) String() string { return "<invalid type>" }
@@ -426,8 +426,8 @@ func (n *PredefinedType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *PredefinedType) isGenericAssociationCompatible(t Type) bool {
-	return n.IsCompatible(t) && n.Attributes().isConst() == t.Attributes().isConst()
+func (n *PredefinedType) isGenericAssociationCompatible(assoc Type) bool {
+	return n.IsCompatible(assoc) && !assoc.Attributes().IsConst()
 }
 
 // setName implements Type.
@@ -484,6 +484,12 @@ func (n *PredefinedType) str(b *strings.Builder, useTag bool) *strings.Builder {
 		return b
 	}
 
+	if n.Attributes().IsConst() {
+		b.WriteString("const ")
+	}
+	if n.Attributes().IsVolatile() {
+		b.WriteString("volatile ")
+	}
 	b.WriteString(n.kind.String())
 	return b
 }
@@ -680,7 +686,7 @@ func (n *FunctionType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *FunctionType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *FunctionType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
 func (n *FunctionType) setName(d *Declarator) Type {
@@ -792,6 +798,7 @@ func (c *ctx) newPointerType(elem Type) (r *PointerType) {
 	if attr != nil {
 		a2 := *attr
 		a2.isVolatile = false
+		a2.isConst = false
 		elem, _ = mergeAttr(elem, &a2)
 	}
 	r = &PointerType{c: c, elem: newTyper(elem)}
@@ -821,16 +828,16 @@ func (n *PointerType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *PointerType) isGenericAssociationCompatible(t Type) (r bool) {
-	if n == t {
+func (n *PointerType) isGenericAssociationCompatible(assoc Type) (r bool) {
+	if n == assoc {
 		return true
 	}
 
-	switch x := t.(type) {
+	switch x := assoc.(type) {
 	case *PointerType:
-		return n == x || n.Attributes().isConst() == x.Attributes().isConst() && n.Elem().isGenericAssociationCompatible(x.Elem())
+		return n == x || n.Attributes().IsConst() == x.Attributes().IsConst() && n.Elem().IsCompatible(x.Elem())
 	case *UnionType:
-		return x.isGenericAssociationCompatible(n)
+		return x.isGenericAssociationCompatible(assoc)
 	default:
 		return false
 	}
@@ -916,6 +923,12 @@ func (n *PointerType) str(b *strings.Builder, useTag bool) *strings.Builder {
 		return b
 	}
 
+	if n.Attributes().IsConst() {
+		b.WriteString("const ")
+	}
+	if n.Attributes().IsVolatile() {
+		b.WriteString("volatile ")
+	}
 	b.WriteString("pointer to ")
 	n.elem.Type().str(b, true)
 	return b
@@ -1332,7 +1345,7 @@ func (n *StructType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *StructType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *StructType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
 func (n *StructType) setName(d *Declarator) Type {
@@ -1593,7 +1606,7 @@ func (n *UnionType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *UnionType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *UnionType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
 func (n *UnionType) setName(d *Declarator) Type {
@@ -1823,7 +1836,7 @@ func (n *ArrayType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *ArrayType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *ArrayType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
 func (n *ArrayType) setName(d *Declarator) Type {
@@ -2068,7 +2081,7 @@ func (n *EnumType) IsCompatible(t Type) bool {
 	}
 }
 
-func (n *EnumType) isGenericAssociationCompatible(t Type) bool { return n.IsCompatible(t) }
+func (n *EnumType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
 func (n *EnumType) setName(d *Declarator) Type {
@@ -2480,7 +2493,7 @@ type Attributes struct {
 
 	alwaysInline bool // __attribute__ ((__always_inline__))
 	gnuInline    bool // __attribute__ ((__gnu_inline__))
-	hasConst     bool
+	isConst      bool
 	isNonZero    bool
 	isVolatile   bool
 	weak         bool
@@ -2517,8 +2530,8 @@ func (n *Attributes) setIsVolatile(v bool) {
 }
 
 func (n *Attributes) setIsConst(v bool) {
-	v, n.hasConst = n.hasConst, v
-	n.isNonZero = v != n.hasConst
+	v, n.isConst = n.isConst, v
+	n.isNonZero = v != n.isConst
 }
 
 func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
@@ -2586,11 +2599,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	}
 
 	switch {
-	case n.vectorSize < 0 && m.vectorSize < 0:
+	case n.vectorSize <= 0 && m.vectorSize <= 0:
 		r.vectorSize = -1
-	case n.vectorSize < 0 && m.vectorSize >= 0:
+	case n.vectorSize <= 0 && m.vectorSize > 0:
 		r.vectorSize = m.vectorSize
-	case n.vectorSize >= 0 && m.vectorSize < 0:
+	case n.vectorSize > 0 && m.vectorSize <= 0:
 		r.vectorSize = n.vectorSize
 	default:
 		if n.vectorSize != m.vectorSize {
@@ -2639,6 +2652,11 @@ func (n *Attributes) merge(nd Node, m *Attributes) (r *Attributes, err error) {
 	switch {
 	case n.isVolatile || m.isVolatile:
 		r.isVolatile = true
+	}
+
+	switch {
+	case n.isConst || m.isConst:
+		r.isConst = true
 	}
 
 	switch {
@@ -2696,7 +2714,8 @@ func (n *Attributes) AlwaysInline() bool { return n != nil && n.alwaysInline }
 // IsVolatile reports if a type is qualified by the 'volatile' keyword.
 func (n *Attributes) IsVolatile() bool { return n != nil && n.isVolatile }
 
-func (n *Attributes) isConst() bool { return n != nil && n.hasConst }
+// IsConst reports if a type is qualified by the 'const' keyword.
+func (n *Attributes) IsConst() bool { return n != nil && n.isConst }
 
 // Alias returns S from __attribute__((alias("S"))) or "" if not present.
 func (n *Attributes) Alias() string { return n.alias }
