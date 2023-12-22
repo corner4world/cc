@@ -801,8 +801,6 @@ func (n *FunctionDefinition) check(c *ctx) {
 }
 
 func (c *ctx) checkFunctionDefinition(sc *Scope, ds *DeclarationSpecifiers, d *Declarator, dl *DeclarationList, cs *CompoundStatement) Type {
-	defer func(f bool) { c.usesVectors = f }(c.usesVectors)
-
 	c.usesVectors = false
 	d.check(c, ds.check(c, &d.isExtern, &d.isStatic, &d.isAtomic, &d.isThreadLocal, &d.isConst, &d.isVolatile, &d.isInline, &d.isRegister, &d.isAuto, &d.isNoreturn, &d.isRestrict, &d.alignas))
 	if x, ok := d.Type().(*FunctionType); ok {
@@ -904,6 +902,13 @@ func (n *BlockItem) check(c *ctx) (r Type) {
 	case BlockItemStmt: // Statement
 		return n.Statement.check(c)
 	case BlockItemFuncDef: // DeclarationSpecifiers Declarator CompoundStatement
+		sv := c.usesVectors
+		c.usesVectors = false
+
+		defer func() {
+			c.usesVectors = sv
+		}()
+
 		c.checkFunctionDefinition(n.CompoundStatement.LexicalScope(), n.DeclarationSpecifiers, n.Declarator, nil, n.CompoundStatement)
 	default:
 		c.errors.add(errorf("internal error: %v", n.Case))
