@@ -1044,9 +1044,19 @@ func (c *cpp) glue(LS, RS cppTokens) (r cppTokens) {
 		return RS
 	case 1:
 		t := LS[0]
+		switch {
+		case t.Ch == rune(IDENTIFIER) && t.SrcStr() == "L":
+			switch RS[0].Ch {
+			case rune(STRINGLITERAL):
+				t.Ch = rune(LONGSTRINGLITERAL)
+			case rune(CHARCONST):
+				t.Ch = rune(LONGCHARCONST)
+			}
+		}
 		t.Set(nil, append(t.Src(), RS[0].Src()...))
 		t.hs = t.hs.cap(RS[0].hs)
-		return append(cppTokens{t}, RS[1:]...)
+		r = append(cppTokens{t}, RS[1:]...)
+		return r
 	}
 
 	// note LS must be L^HS • LS’

@@ -261,9 +261,9 @@ func (p *parser) shift0() (r Token) {
 
 func (p *parser) shift(checkTypeName bool) (r Token) {
 	r = p.shift0()
-	// if r.Ch != ' ' && r.Ch != '\n' { //TODO-DBG
-	// 	trc("%v: %#U %q", pos(r), r.Ch, r.SrcStr())
-	// }
+	if r.Ch != ' ' && r.Ch != '\n' { //TODO-DBG
+		trc("%v: %#U %q", pos(r), r.Ch, r.SrcStr())
+	}
 	switch {
 	case r.Ch == rune(STRINGLITERAL) && p.rune(false) == rune(STRINGLITERAL):
 		sep := r.Sep()
