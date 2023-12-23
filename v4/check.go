@@ -4600,7 +4600,8 @@ out:
 		n.setPure(n.PostfixExpression.Pure() && n.ExpressionList.Pure())
 	case PostfixExpressionCall: // PostfixExpression '(' ArgumentExpressionList ')'
 		switch isName(n.PostfixExpression) {
-		case "__builtin_types_compatible_p_impl":
+		case "__ccgo__types_compatible_p":
+			n.PostfixExpression.check(c, mode.add(decay|implicitFuncDef))
 			n.typ = c.intT
 			args := n.ArgumentExpressionList.check(c, 0, &n.purer)
 			if len(args) != 2 {

@@ -66,7 +66,7 @@ typedef void *__builtin_va_list;
 #define __builtin_va_copy(dst, src) dst = src
 
 #define __builtin_offsetof(type, member) ((__SIZE_TYPE__)&(((type*)0)->member))
-#define __builtin_types_compatible_p(t1, t2) __ccgo__builtin_types_compatible_p((t1)0, (t2)0)
+#define __builtin_types_compatible_p(t1, t2) __ccgo__types_compatible_p((t1){}, (t2){})
 
 int __predefined_declarator;
 
@@ -200,7 +200,7 @@ int __builtin_strcmp(const char *s1, const char *s2);
 int __builtin_strncmp(const char *s1, const char *s2, __SIZE_TYPE__ n);
 int __builtin_tolower(int c);
 int __builtin_toupper(int c);
-int __ccgo__builtin_types_compatible_p();
+int __ccgo__types_compatible_p();
 int __builtin_vdprintf(int fd, const char *format, __builtin_va_list ap);
 int __builtin_vfprintf(void *stream, const char *format, __builtin_va_list ap);
 int __builtin_vfscanf(void *stream, const char *format, __builtin_va_list ap);
