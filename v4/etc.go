@@ -483,6 +483,36 @@ func findNode(typ string, n Node, depth int, out *Node, pdepth *int) {
 	}
 }
 
+func findAllNodes(typ string, n Node) []Node {
+	v := reflect.ValueOf(n)
+	if v.Kind() != reflect.Ptr {
+		return nil
+	}
+
+	elem := v.Elem()
+	if elem.Kind() != reflect.Struct {
+		return nil
+	}
+
+	var nodes []Node
+	t := reflect.TypeOf(elem.Interface())
+	if t.Name() == typ {
+		nodes = append(nodes, n)
+	}
+
+	for i := 0; i < elem.NumField(); i++ {
+		fld := t.Field(i)
+		if nm := fld.Name[0]; nm < 'A' || nm > 'Z' {
+			continue
+		}
+
+		if x, ok := elem.FieldByIndex([]int{i}).Interface().(Node); ok {
+			nodes = append(nodes, findAllNodes(typ, x)...)
+		}
+	}
+	return nodes
+}
+
 func roundup(n, to int64) int64 {
 	if r := n % to; r != 0 {
 		return n + to - r

@@ -2913,22 +2913,6 @@ void f() {
 }
 
 func TestSingleBytewchar(t *testing.T) {
-	switch target {
-	case
-		"freebsd/386",
-		"freebsd/amd64",
-		"freebsd/arm64",
-		"netbsd/386",
-		"netbsd/amd64",
-		"netbsd/armv7",
-		"openbsd/386",
-		"openbsd/amd64",
-		"windows/386",
-		"windows/amd64":
-
-		t.Skip("TODO")
-	}
-
 	const src = `
 #include <stddef.h>
 wchar_t *c = L"!";
@@ -2946,19 +2930,26 @@ wchar_t *c = L"!";
 #define __WCHAR_TYPE__ unsigned char
 #define __SIZEOF_WCHAR_T__ 1
 `},
-		{Name: "<builtin>", Value: `int __predefined_declarator;`},
+		{Name: "<builtin>", Value: Builtin},
 		{Name: "test.h", Value: src},
 	}
 	var ast *AST
 	if ast, err = Translate(cfg, sources); err != nil {
 		t.Fatalf("unexpected Translate error: %v", err)
 	}
-
-	var out Node
-	d := 100
-	findNode("PrimaryExpression", ast.TranslationUnit, 0, &out, &d)
-	pe := out.(*PrimaryExpression)
-	if _, ok := pe.Value().(StringValue); !ok {
-		t.Fatalf("value should be of type StringValue, but was of type %T", pe.Value())
+	nodes := findAllNodes("InitDeclarator", ast.TranslationUnit)
+	for _, n := range nodes {
+		decl := n.(*InitDeclarator)
+		if decl.Declarator.Name() == "c" {
+			var out Node
+			d := 100
+			findNode("PrimaryExpression", decl, 0, &out, &d)
+			pe := out.(*PrimaryExpression)
+			if _, ok := pe.Value().(StringValue); !ok {
+				t.Fatalf("value should be of type StringValue, but was of type %T", pe.Value())
+			}
+			return
+		}
 	}
+	t.Fatalf("Could not find InitDeclarator for value 'c'")
 }
