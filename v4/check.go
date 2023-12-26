@@ -2659,10 +2659,11 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 func (n *ArgumentExpressionList) check(c *ctx, mode flags, p *purer) (r []ExpressionNode) {
 	pure := true
 	for ; n != nil; n = n.ArgumentExpressionList {
-		n.AssignmentExpression.check(c, mode)
-		pure = pure && n.AssignmentExpression.Pure()
-		n.AssignmentExpression.eval(c, mode)
-		r = append(r, n.AssignmentExpression)
+		e := n.AssignmentExpression
+		e.check(c, mode)
+		pure = pure && e.Pure()
+		e.eval(c, mode)
+		r = append(r, e)
 	}
 	p.setPure(pure)
 	return r
@@ -4621,6 +4622,26 @@ out:
 			}
 
 			n.val = bool2int(n.Pure() && args[0].Value() != Unknown)
+			break out
+		case "__builtin_choose_expr":
+			n.PostfixExpression.check(c, mode.add(decay|implicitFuncDef))
+			args := n.ArgumentExpressionList.check(c, decay|noRead, &n.purer)
+			if len(args) != 3 {
+				c.errors.add(errorf("%v: expected three argument: (%s)", n.Position(), NodeSource(n.ArgumentExpressionList)))
+				break out
+			}
+
+			switch {
+			case isNonzero(args[0].Value()):
+				n.val = args[1].Value()
+				n.typ = args[1].Type()
+			case isZero(args[0].Value()):
+				n.val = args[2].Value()
+				n.typ = args[2].Type()
+			default:
+				trc("%T(%[1]v)", n.Value())
+				c.errors.add(errorf("%v: expected an integer constant expression: (%s)", args[0].Position(), NodeSource(args[0])))
+			}
 			break out
 		default:
 			mode = mode.add(implicitFuncDef)
