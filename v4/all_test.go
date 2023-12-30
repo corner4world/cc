@@ -54,7 +54,45 @@ func init() {
 	isTesting = true
 	extendedErrors = true
 	var err error
-	if defaultCfg0, err = NewConfig(runtime.GOOS, runtime.GOARCH, []string{LongDouble64Flag(runtime.GOOS, runtime.GOARCH)}...); err != nil {
+	flags := []string{LongDouble64Flag(runtime.GOOS, runtime.GOARCH)}
+	if goos == "windows" && (goarch == "386" || goarch == "amd64") {
+		flags = append(flags,
+			"-mno-3dnow",
+			"-mno-abm",
+			"-mno-aes",
+			"-mno-avx",
+			"-mno-avx2",
+			"-mno-avx512cd",
+			"-mno-avx512er",
+			"-mno-avx512f",
+			"-mno-avx512pf",
+			"-mno-bmi",
+			"-mno-bmi2",
+			"-mno-f16c",
+			"-mno-fma",
+			"-mno-fma4",
+			"-mno-fsgsbase",
+			"-mno-lwp",
+			"-mno-lzcnt",
+			"-mno-mmx",
+			"-mno-pclmul",
+			"-mno-popcnt",
+			"-mno-prefetchwt1",
+			"-mno-rdrnd",
+			"-mno-sha",
+			"-mno-sse",
+			"-mno-sse2",
+			"-mno-sse3",
+			"-mno-sse4",
+			"-mno-sse4.1",
+			"-mno-sse4.2",
+			"-mno-sse4a",
+			"-mno-ssse3",
+			"-mno-tbm",
+			"-mno-xop",
+		)
+	}
+	if defaultCfg0, err = NewConfig(runtime.GOOS, runtime.GOARCH, flags...); err != nil {
 		panic(errorf("NewConfig: %v", err))
 	}
 
@@ -98,7 +136,6 @@ func exampleAST(rule int, src string) (r interface{}) {
 	defer func() {
 		if err := recover(); err != nil {
 			r = fmt.Sprintf("%v (%v:)", err, origin(5))
-			trc("%v\n%s", r, debug.Stack())
 		}
 	}()
 
@@ -234,7 +271,7 @@ type parallel struct {
 }
 
 func newParallel() *parallel {
-	limit := runtime.GOMAXPROCS(0)
+	limit := runtime.GOMAXPROCS(-1)
 	switch runtime.GOARCH {
 	case "386", "arm": // 32 bit targets
 		limit = 1
@@ -249,8 +286,8 @@ func newParallel() *parallel {
 }
 
 func (p *parallel) exec(run func()) {
-	p.limit <- struct{}{}
 	p.wg.Add(1)
+	p.limit <- struct{}{}
 
 	go func() {
 		defer func() {
@@ -1919,7 +1956,6 @@ func testMake(t *testing.T, archive, dir string, mcfg *makeCfg) (files, ok, skip
 
 		var a []string
 		if err := json.NewDecoder(bytes.NewReader(b)).Decode(&a); err != nil {
-			trc("", a)
 			t.Fatal(err)
 		}
 
