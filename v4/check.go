@@ -3501,11 +3501,15 @@ func (n *StructDeclarator) check(c *ctx, t Type, isAtomic, isConst, isVolatile, 
 
 		switch x := r.Type().(type) {
 		case *StructType:
+			x = x.clone().(*StructType)
+			r.typ.typ = x
 			for _, v := range x.fields {
 				// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), r.Name(), r)
 				v.parentField2 = r
 			}
 		case *UnionType:
+			x = x.clone().(*UnionType)
+			r.typ.typ = x
 			for _, v := range x.fields {
 				// trc("fld at %p, %q set parent fdl %q at %p", v, v.Name(), r.Name(), r)
 				v.parentField2 = r
