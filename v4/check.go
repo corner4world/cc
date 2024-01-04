@@ -2919,20 +2919,41 @@ func (n *EnumSpecifier) check(c *ctx) (r Type) {
 			}
 		}
 		switch {
-		case min >= math.MinInt32 && max <= math.MaxInt32:
-			// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
-			t = c.intT
-		case min >= 0 && max <= math.MaxUint32:
-			t = c.ast.kinds[UInt]
-		case max < math.MaxInt64:
-			t = c.ast.kinds[Long]
-			if t.Size() < 8 {
-				t = c.ast.kinds[LongLong]
+		case c.cfg.UnsignedEnums:
+			switch {
+			case min >= 0 && max <= math.MaxUint32:
+				t = c.ast.kinds[UInt]
+			case min >= math.MinInt32 && max <= math.MaxInt32:
+				// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
+				t = c.intT
+			case min >= 0 && max < math.MaxInt64:
+				t = c.ast.kinds[ULong]
+				if t.Size() < 8 {
+					t = c.ast.kinds[ULongLong]
+				}
+			default:
+				t = c.ast.kinds[Long]
+				if t.Size() < 8 {
+					t = c.ast.kinds[LongLong]
+				}
 			}
 		default:
-			t = c.ast.kinds[ULong]
-			if t.Size() < 8 {
-				t = c.ast.kinds[ULongLong]
+			switch {
+			case min >= math.MinInt32 && max <= math.MaxInt32:
+				// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
+				t = c.intT
+			case min >= 0 && max <= math.MaxUint32:
+				t = c.ast.kinds[UInt]
+			case max < math.MaxInt64:
+				t = c.ast.kinds[Long]
+				if t.Size() < 8 {
+					t = c.ast.kinds[LongLong]
+				}
+			default:
+				t = c.ast.kinds[ULong]
+				if t.Size() < 8 {
+					t = c.ast.kinds[ULongLong]
+				}
 			}
 		}
 		for _, v := range list {

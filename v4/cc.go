@@ -605,7 +605,10 @@ type Config struct {
 	DefaultWcharT   Kind
 
 	// Header disables type checking of function bodies.
-	Header                 bool
+	Header bool
+	// GCC compatibility: enums with no negative values will have unsigned type.
+	UnsignedEnums bool
+
 	doNotInjectFunc        bool // testing
 	fakeIncludes           bool // testing
 	freeStanding           bool // -ffreestanding, implies -fno-builtin
