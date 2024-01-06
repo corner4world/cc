@@ -801,8 +801,6 @@ func (n *FunctionDefinition) check(c *ctx) {
 }
 
 func (c *ctx) checkFunctionDefinition(sc *Scope, ds *DeclarationSpecifiers, d *Declarator, dl *DeclarationList, cs *CompoundStatement) Type {
-	defer func(f bool) { c.usesVectors = f }(c.usesVectors)
-
 	c.usesVectors = false
 	d.check(c, ds.check(c, &d.isExtern, &d.isStatic, &d.isAtomic, &d.isThreadLocal, &d.isConst, &d.isVolatile, &d.isInline, &d.isRegister, &d.isAuto, &d.isNoreturn, &d.isRestrict, &d.alignas))
 	if x, ok := d.Type().(*FunctionType); ok {
@@ -904,6 +902,13 @@ func (n *BlockItem) check(c *ctx) (r Type) {
 	case BlockItemStmt: // Statement
 		return n.Statement.check(c)
 	case BlockItemFuncDef: // DeclarationSpecifiers Declarator CompoundStatement
+		sv := c.usesVectors
+		c.usesVectors = false
+
+		defer func() {
+			c.usesVectors = sv
+		}()
+
 		c.checkFunctionDefinition(n.CompoundStatement.LexicalScope(), n.DeclarationSpecifiers, n.Declarator, nil, n.CompoundStatement)
 	default:
 		c.errors.add(errorf("internal error: %v", n.Case))
@@ -2654,10 +2659,11 @@ func (n *AttributeValue) check(c *ctx, attr *Attributes) {
 func (n *ArgumentExpressionList) check(c *ctx, mode flags, p *purer) (r []ExpressionNode) {
 	pure := true
 	for ; n != nil; n = n.ArgumentExpressionList {
-		n.AssignmentExpression.check(c, mode)
-		pure = pure && n.AssignmentExpression.Pure()
-		n.AssignmentExpression.eval(c, mode)
-		r = append(r, n.AssignmentExpression)
+		e := n.AssignmentExpression
+		e.check(c, mode)
+		pure = pure && e.Pure()
+		e.eval(c, mode)
+		r = append(r, e)
 	}
 	p.setPure(pure)
 	return r
@@ -2913,20 +2919,41 @@ func (n *EnumSpecifier) check(c *ctx) (r Type) {
 			}
 		}
 		switch {
-		case min >= math.MinInt32 && max <= math.MaxInt32:
-			// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
-			t = c.intT
-		case min >= 0 && max <= math.MaxUint32:
-			t = c.ast.kinds[UInt]
-		case max < math.MaxInt64:
-			t = c.ast.kinds[Long]
-			if t.Size() < 8 {
-				t = c.ast.kinds[LongLong]
+		case c.cfg.UnsignedEnums:
+			switch {
+			case min >= 0 && max <= math.MaxUint32:
+				t = c.ast.kinds[UInt]
+			case min >= math.MinInt32 && max <= math.MaxInt32:
+				// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
+				t = c.intT
+			case min >= 0 && max < math.MaxInt64:
+				t = c.ast.kinds[ULong]
+				if t.Size() < 8 {
+					t = c.ast.kinds[ULongLong]
+				}
+			default:
+				t = c.ast.kinds[Long]
+				if t.Size() < 8 {
+					t = c.ast.kinds[LongLong]
+				}
 			}
 		default:
-			t = c.ast.kinds[ULong]
-			if t.Size() < 8 {
-				t = c.ast.kinds[ULongLong]
+			switch {
+			case min >= math.MinInt32 && max <= math.MaxInt32:
+				// [0]6.4.4.3/2: An identifier declared as an enumeration constant has type int.
+				t = c.intT
+			case min >= 0 && max <= math.MaxUint32:
+				t = c.ast.kinds[UInt]
+			case max < math.MaxInt64:
+				t = c.ast.kinds[Long]
+				if t.Size() < 8 {
+					t = c.ast.kinds[LongLong]
+				}
+			default:
+				t = c.ast.kinds[ULong]
+				if t.Size() < 8 {
+					t = c.ast.kinds[ULongLong]
+				}
 			}
 		}
 		for _, v := range list {
@@ -4595,7 +4622,8 @@ out:
 		n.setPure(n.PostfixExpression.Pure() && n.ExpressionList.Pure())
 	case PostfixExpressionCall: // PostfixExpression '(' ArgumentExpressionList ')'
 		switch isName(n.PostfixExpression) {
-		case "__builtin_types_compatible_p_impl":
+		case "__ccgo__types_compatible_p":
+			n.PostfixExpression.check(c, mode.add(decay|implicitFuncDef))
 			n.typ = c.intT
 			args := n.ArgumentExpressionList.check(c, 0, &n.purer)
 			if len(args) != 2 {
@@ -4615,6 +4643,26 @@ out:
 			}
 
 			n.val = bool2int(n.Pure() && args[0].Value() != Unknown)
+			break out
+		case "__builtin_choose_expr":
+			n.PostfixExpression.check(c, mode.add(decay|implicitFuncDef))
+			args := n.ArgumentExpressionList.check(c, decay|noRead, &n.purer)
+			if len(args) != 3 {
+				c.errors.add(errorf("%v: expected three argument: (%s)", n.Position(), NodeSource(n.ArgumentExpressionList)))
+				break out
+			}
+
+			switch {
+			case isNonzero(args[0].Value()):
+				n.val = args[1].Value()
+				n.typ = args[1].Type()
+			case isZero(args[0].Value()):
+				n.val = args[2].Value()
+				n.typ = args[2].Type()
+			default:
+				trc("%T(%[1]v)", n.Value())
+				c.errors.add(errorf("%v: expected an integer constant expression: (%s)", args[0].Position(), NodeSource(args[0])))
+			}
 			break out
 		default:
 			mode = mode.add(implicitFuncDef)

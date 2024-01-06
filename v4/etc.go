@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	extendedErrors bool // true: Errors will include origin info.
+	extendedErrors bool = true // true: Errors will include origin info.
 )
 
 func stack() []byte { return debug.Stack() }

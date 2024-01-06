@@ -1089,7 +1089,6 @@ func (n *Field) OuterGroupOffset() int64 {
 
 type structType struct {
 	fields []*Field
-	m      map[string]*Field
 	scope  *Scope
 	size   int64
 	tag    Token
@@ -1173,30 +1172,32 @@ func (n *structType) fieldByIndex(i int) *Field {
 }
 
 func (n *structType) fieldByName(nm string) *Field {
-	if f := n.m[nm]; f != nil {
-		return f
-	}
-
-	if n.m == nil {
-		m := map[string][]*Field{}
-		n.collectFields(m, nil, 0, 0, 0)
-		n.m = map[string]*Field{}
-		for k, v := range m {
-			sort.Slice(v, func(i, j int) bool {
-				if v[i].depth < v[j].depth {
-					return true
-				}
-
-				if v[i].depth > v[j].depth {
-					return false
-				}
-
-				return v[i].seq < v[j].seq
-			})
-			n.m[k] = v[0]
+	for _, v := range n.fields {
+		if v.Name() == nm {
+			return v
 		}
 	}
-	return n.m[nm]
+
+	m := map[string][]*Field{}
+	n.collectFields(m, nil, 0, 0, 0)
+	for _, v := range m {
+		sort.Slice(v, func(i, j int) bool {
+			if v[i].depth < v[j].depth {
+				return true
+			}
+
+			if v[i].depth > v[j].depth {
+				return false
+			}
+
+			return v[i].seq < v[j].seq
+		})
+	}
+	if s, ok := m[nm]; ok {
+		return s[0]
+	}
+
+	return nil
 }
 
 func (n *structType) collectFields(m map[string][]*Field, parent *Field, depth int, off int64, seq int) int {
@@ -1259,7 +1260,7 @@ func (n *StructType) clone() Type {
 	r := *n
 	r.namer.d = nil
 	r.structType = *r.structType.clone()
-	return &r //TODO clone
+	return &r
 }
 
 // HasFlexibleArrayMember reports whether n has a flexible array member:
@@ -1545,7 +1546,14 @@ func (c *ctx) newUnionType(scope *Scope, tag Token, fields []*Field, size int64,
 }
 
 func (n *UnionType) clone() Type {
-	return n //TODO clone
+	if n.forward != nil {
+		return n.forward.Type().clone()
+	}
+
+	r := *n
+	r.namer.d = nil
+	r.structType = *r.structType.clone()
+	return &r
 }
 
 // Pointer implements Type.
