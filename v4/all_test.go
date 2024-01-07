@@ -748,7 +748,7 @@ func TestTranslationPhase4(t *testing.T) {
 		"11.c": {},
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
-	case "linux/s390x", "linux/loong64":
+	case "linux/s390x", "linux/loong64", "linux/mips64le":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	}
 	var files, ok, skip, fails int32
@@ -1129,7 +1129,7 @@ func TestParse(t *testing.T) {
 		"nbody-8.c": {}, // _Float16 not supported
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
-	case "linux/s390x", "linux/loong64":
+	case "linux/s390x", "linux/loong64", "linux/mips64le":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	case "freebsd/amd64":
 		blacklistDebian["mandelbrot-6.c"] = struct{}{}
@@ -1388,6 +1388,8 @@ func TestTranslate(t *testing.T) {
 		"nbody-8.c": {}, // _Float16 not supported
 	}
 	switch fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH) {
+	case "linux/mips64le":
+		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	case "linux/s390x":
 		blacklistCompCert["aes.c"] = struct{}{} // Unsupported endianness.
 	case "linux/loong64":
