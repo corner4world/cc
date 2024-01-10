@@ -316,12 +316,20 @@ func (c *ctx) checkScope(s *Scope) {
 			}
 		}
 		if len(ess) > 1 {
-			a := ess[1]
-			c.errors.add(errorf("%v: redeclaration of 'enum %s' at %v:", a.Position(), a.Token2.Src(), ess[0].Position()))
+			for _, v := range ess[1:] {
+				if !ess[0].Type().IsCompatible(v.Type()) {
+					c.errors.add(errorf("%v: incompatible redeclaration of '%s' at %v:", v.Position(), v.Type(), ess[0].Position()))
+					break
+				}
+			}
 		}
 		if len(es) > 1 {
-			a := es[1]
-			c.errors.add(errorf("%v: redeclaration of enumerator '%s' at %v:", a.Position(), a.Token.Src(), es[0].Position()))
+			for _, v := range es[1:] {
+				if !es[0].compatibleRedeclaration(v) {
+					c.errors.add(errorf("%v: incompatible redeclaration of enumerator '%s' at %v:", v.Position(), v.Token.Src(), es[0].Position()))
+					break
+				}
+			}
 		}
 		if len(lds) > 1 {
 			c.errors.add(errorf("TODO %T", lds[0]))
@@ -333,7 +341,12 @@ func (c *ctx) checkScope(s *Scope) {
 			c.errors.add(errorf("TODO %T", lss[0]))
 		}
 		if len(sus) > 1 {
-			c.errors.add(errorf("TODO %T", sus[0]))
+			for _, v := range sus[1:] {
+				if !sus[0].Type().IsCompatible(v.Type()) {
+					c.errors.add(errorf("%v: incompatible redeclaration of '%s' at %v:", v.Position(), v.Type(), sus[0].Position()))
+					break
+				}
+			}
 		}
 	}
 }
@@ -2320,16 +2333,23 @@ func (n *Pointer) check(c *ctx, t Type) (r Type) {
 	defer func() {
 		if r == nil || r == Invalid {
 			c.errors.add(errorf("TODO %T missed/failed type check", n))
+			return
 		}
 	}()
 
 	switch n.Case {
 	case PointerTypeQual: // '*' TypeQualifiers
-		return c.newPointerType(t)
+		p := c.newPointerType(t)
+		p.scope = n.LexicalScope()
+		return p
 	case PointerPtr: // '*' TypeQualifiers Pointer
-		return n.Pointer.check(c, c.newPointerType(t))
+		p := c.newPointerType(t)
+		p.scope = n.LexicalScope()
+		return n.Pointer.check(c, p)
 	case PointerBlock: // '^' TypeQualifiers
-		return n.Pointer.check(c, c.newPointerType(t))
+		p := c.newPointerType(t)
+		p.scope = n.LexicalScope()
+		return n.Pointer.check(c, p)
 	default:
 		c.errors.add(errorf("internal error: %v", n.Case))
 	}
@@ -4527,11 +4547,18 @@ func (c *ctx) takeAddr(n Node) {
 	case *PostfixExpression:
 		switch x.Case {
 		case PostfixExpressionIndex: // PostfixExpression '[' ExpressionList ']'
+			var e ExpressionNode
 			switch {
 			case IsIntegerType(x.ExpressionList.Type()):
-				c.takeAddr(x.PostfixExpression)
+				e = x.PostfixExpression
 			default:
-				c.takeAddr(x.ExpressionList)
+				e = x.ExpressionList
+			}
+			switch t := e.Type(); t.Kind() {
+			case Ptr:
+				// ok
+			default:
+				c.takeAddr(e)
 			}
 		case PostfixExpressionSelect: // PostfixExpression '.' IDENTIFIER
 			c.takeAddr(x.PostfixExpression)

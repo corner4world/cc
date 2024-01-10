@@ -365,12 +365,13 @@ func (c *ctx) newPredefinedType(kind Kind) *PredefinedType {
 	return &PredefinedType{c: c, kind: kind}
 }
 
-func (n *PredefinedType) clone() Type {
-	r := *n
-	r.namer.d = nil
-	r.bitField = nil
-	r.ptr = nil
-	return &r
+func (n *PredefinedType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-DBG
+	m := *n
+	m.namer.d = nil
+	m.bitField = nil
+	m.ptr = nil
+	return &m
 }
 
 // BitField implements Type.
@@ -411,7 +412,8 @@ func (n *PredefinedType) setAttr(a *Attributes) Type {
 	return &m
 }
 
-func (n *PredefinedType) IsCompatible(t Type) bool {
+func (n *PredefinedType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("%q %q %v", n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -614,7 +616,8 @@ func (c *ctx) newFunctionType2(result Type, fp []*Parameter) (r *FunctionType) {
 	return r
 }
 
-func (n *FunctionType) clone() Type {
+func (n *FunctionType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-DBG
 	return n //TODO clone
 }
 
@@ -646,7 +649,8 @@ func (n *FunctionType) setAttr(a *Attributes) Type {
 	return &m
 }
 
-func (n *FunctionType) IsCompatible(t Type) bool {
+func (n *FunctionType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("%q %q %v", n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -772,16 +776,18 @@ type PointerType struct {
 	namer
 	noBitField
 	ptr     Type
+	scope   *Scope
 	undecay Type
 	vectorSizer
 }
 
-// NewPointerType returns an elem pointer.
-func NewPointerType(elem Type) (r *PointerType) {
-	panic(todo(""))
-}
+// // NewPointerType returns an elem pointer.
+// func NewPointerType(elem Type) (r *PointerType) {
+// 	panic(todo(""))
+// }
 
-func (n *PointerType) clone() Type {
+func (n *PointerType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
 	return n //TODO clone
 }
 
@@ -813,14 +819,15 @@ func (n *PointerType) setAttr(a *Attributes) Type {
 	return &m
 }
 
-func (n *PointerType) IsCompatible(t Type) bool {
+func (n *PointerType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc(":822: %q(%q) %q(%q) %v", n, n.Elem(), t, t.(*PointerType).Elem(), r) }() //TODO-
 	if n == t {
 		return true
 	}
 
 	switch x := t.(type) {
 	case *PointerType:
-		return n == x || n.Elem().IsCompatible(x.Elem())
+		return n == x || n.elemForIsCompatible().IsCompatible(x.elemForIsCompatible())
 	case *UnionType:
 		return x.IsCompatible(n)
 	default:
@@ -855,7 +862,25 @@ func (c *ctx) newPointerType2(elem, undecay Type) *PointerType {
 }
 
 // Elem returns the type n points to.
-func (n *PointerType) Elem() Type { return n.elem.Type() }
+func (n *PointerType) Elem() Type {
+	return n.elem.Type()
+}
+
+func (n *PointerType) elemForIsCompatible() Type {
+	switch x := n.elem.typ.(type) {
+	case *StructType:
+		if n.scope == nil {
+			break
+		}
+
+		if tag := x.tag.SrcStr(); tag != "" {
+			if sus := n.scope.structOrUnion(x.tag); sus != nil {
+				return sus.Type()
+			}
+		}
+	}
+	return n.elem.Type()
+}
 
 // Align implements Type.
 func (n *PointerType) Align() int {
@@ -930,7 +955,7 @@ func (n *PointerType) str(b *strings.Builder, useTag bool) *strings.Builder {
 		b.WriteString("volatile ")
 	}
 	b.WriteString("pointer to ")
-	n.elem.Type().str(b, true)
+	n.Elem().str(b, true)
 	return b
 }
 
@@ -960,10 +985,11 @@ type Field struct {
 	isFlexibleArrayMember bool
 }
 
-func (n *Field) clone() *Field {
-	r := *n
-	r.typ.typ = n.typ.typ.clone()
-	return &r
+func (n *Field) clone() (r *Field) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
+	m := *n
+	m.typ.typ = n.typ.typ.clone()
+	return &m
 }
 
 // ParentType returns the type containing 'n'.
@@ -1099,13 +1125,14 @@ type structType struct {
 	isUnion       bool
 }
 
-func (n *structType) clone() *structType {
-	r := *n
-	r.fields = append([]*Field(nil), n.fields...)
-	for i, f := range r.fields {
-		r.fields[i] = f.clone()
+func (n *structType) clone() (r *structType) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
+	m := *n
+	m.fields = append([]*Field(nil), n.fields...)
+	for i, f := range m.fields {
+		m.fields[i] = f.clone()
 	}
-	return &r
+	return &m
 }
 
 func (n *structType) isIncomplete() bool {
@@ -1140,12 +1167,13 @@ func (n *structType) isIncomplete() bool {
 // one byte. Padding will report 3 in this case.
 func (n *structType) Padding() int { return n.padding }
 
-func (n *structType) IsCompatible(m *structType) bool {
+func (n *structType) IsCompatible(m *structType) (r bool) {
+	// defer func() { trc("%v", r) }() //TODO-
 	if n == m {
 		return true
 	}
 
-	if n.size != m.size || n.tag != m.tag || len(n.fields) != len(m.fields) {
+	if n.size != m.size || n.tag.SrcStr() != m.tag.SrcStr() || len(n.fields) != len(m.fields) {
 		return false
 	}
 
@@ -1252,15 +1280,16 @@ func (c *ctx) newStructType(scope *Scope, tag Token, fields []*Field, size int64
 	return r
 }
 
-func (n *StructType) clone() Type {
+func (n *StructType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
 	if n.forward != nil {
 		return n.forward.Type().clone()
 	}
 
-	r := *n
-	r.namer.d = nil
-	r.structType = *r.structType.clone()
-	return &r
+	m := *n
+	m.namer.d = nil
+	m.structType = *m.structType.clone()
+	return &m
 }
 
 // HasFlexibleArrayMember reports whether n has a flexible array member:
@@ -1319,13 +1348,15 @@ func (n *StructType) Attributes() *Attributes {
 }
 
 // setAttr implements Type.
-func (n *StructType) setAttr(a *Attributes) Type {
+func (n *StructType) setAttr(a *Attributes) (r Type) {
+	// defer func() { trc("%T p --> (%p %q)", n, n, r, r) }() //TODO-
 	m := *n
 	m.attrs, _ = n.Attributes().merge(nil, a)
 	return &m
 }
 
-func (n *StructType) IsCompatible(t Type) bool {
+func (n *StructType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("--> (%p %p %T) %q %q %v", n, t, t, n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -1349,10 +1380,11 @@ func (n *StructType) IsCompatible(t Type) bool {
 func (n *StructType) isGenericAssociationCompatible(assoc Type) bool { return n.IsCompatible(assoc) }
 
 // setName implements Type.
-func (n *StructType) setName(d *Declarator) Type {
-	r := *n
-	r.namer = namer{d}
-	return &r
+func (n *StructType) setName(d *Declarator) (r Type) {
+	// defer func() { trc("%T p --> (%p %q)", n, n, r, r) }() //TODO-
+	m := *n
+	m.namer = namer{d}
+	return &m
 }
 
 // FieldByIndex returns a member field by index, if any.
@@ -1545,15 +1577,16 @@ func (c *ctx) newUnionType(scope *Scope, tag Token, fields []*Field, size int64,
 	return r
 }
 
-func (n *UnionType) clone() Type {
+func (n *UnionType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
 	if n.forward != nil {
 		return n.forward.Type().clone()
 	}
 
-	r := *n
-	r.namer.d = nil
-	r.structType = *r.structType.clone()
-	return &r
+	m := *n
+	m.namer.d = nil
+	m.structType = *m.structType.clone()
+	return &m
 }
 
 // Pointer implements Type.
@@ -1593,7 +1626,8 @@ func (n *UnionType) setAttr(a *Attributes) Type {
 	return &m
 }
 
-func (n *UnionType) IsCompatible(t Type) bool {
+func (n *UnionType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("%q %q %v", n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -1811,9 +1845,10 @@ func (c *ctx) newArrayType(elem Type, elems int64, expr ExpressionNode) (r *Arra
 	return r
 }
 
-func (n *ArrayType) clone() Type {
-	r := *n
-	return &r //TODO clone
+func (n *ArrayType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
+	m := *n
+	return &m //TODO clone
 }
 
 // Pointer implements Type.
@@ -1831,7 +1866,8 @@ func (n *ArrayType) setAttr(a *Attributes) Type {
 	return &m
 }
 
-func (n *ArrayType) IsCompatible(t Type) bool {
+func (n *ArrayType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("%q %q %v", n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -1974,7 +2010,8 @@ func (c *ctx) newEnumType(scope *Scope, tag Token, typ Type, enums []*Enumerator
 	return &EnumType{c: c, tag: tag, typ: newTyper(typ), enums: enums, scope: scope}
 }
 
-func (n *EnumType) clone() Type {
+func (n *EnumType) clone() (r Type) {
+	// defer func() { trc("%p %q cloned to %p %q", n, n, r, r) }() //TODO-
 	return n //TODO clone
 }
 
@@ -2054,7 +2091,8 @@ func (n *EnumType) UnderlyingType() Type {
 	return n.typ.Type()
 }
 
-func (n *EnumType) IsCompatible(t Type) bool {
+func (n *EnumType) IsCompatible(t Type) (r bool) {
+	// defer func() { trc("%q %q %v", n, t, r) }() //TODO-
 	if n == t {
 		return true
 	}
@@ -2073,7 +2111,7 @@ func (n *EnumType) IsCompatible(t Type) bool {
 			return true
 		}
 
-		if n.tag != x.tag {
+		if n.tag.SrcStr() != x.tag.SrcStr() {
 			return false
 		}
 

@@ -742,6 +742,7 @@ package cc // import "modernc.org/cc/v4"
 /*yy:case FuncIdent  */ |	DirectDeclarator '(' IdentifierList ')'
 
 			/*yy:example int *p; */
+			/*yy:field	*lexicalScope				*/
 /*yy:case TypeQual   */ Pointer:
 				'*' TypeQualifiers
 			/*yy:example int **p; */

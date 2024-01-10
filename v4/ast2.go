@@ -290,3 +290,11 @@ func (n *TypeQualifiers) isConst() bool {
 	}
 	return false
 }
+
+func (e *Enumerator) compatibleRedeclaration(f *Enumerator) bool {
+	if e.Token.SrcStr() != f.Token.SrcStr() || e.Type() == nil || !e.Type().IsCompatible(f.Type()) {
+		return false
+	}
+
+	return e.Value() != nil && e.Value() == f.Value()
+}

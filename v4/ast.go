@@ -3616,6 +3616,7 @@ func (n PointerCase) String() string {
 //	|       '*' TypeQualifiers Pointer  // Case PointerPtr
 //	|       '^' TypeQualifiers          // Case PointerBlock
 type Pointer struct {
+	*lexicalScope
 	Case           PointerCase `PrettyPrint:"stringer,zero"`
 	Pointer        *Pointer
 	Token          Token

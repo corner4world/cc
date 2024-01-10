@@ -2991,3 +2991,164 @@ wchar_t *c = L"!";
 	}
 	t.Fatalf("Could not find InitDeclarator for value 'c'")
 }
+
+// https://gitlab.com/cznic/ccgo/-/issues/34
+func TestIssue34(t *testing.T) {
+	cfg := defaultCfg()
+	_, err := Translate(cfg, []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "bug.c", Value: `
+
+void* f() {
+	return 0;
+}
+
+void* g() {
+	return &(((int*)(f()))[1]);
+} 
+
+`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIssue34b(t *testing.T) {
+	cfg := defaultCfg()
+	_, err := Translate(cfg, []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "bug.c", Value: `
+
+typedef unsigned long int __uint64_t;
+typedef __uint64_t uint64_t;
+typedef uint64_t ecs_id_t;
+typedef ecs_id_t ecs_entity_t;
+
+typedef enum ecs_primitive_kind_t {
+ EcsBool = 1,
+ EcsChar,
+ EcsByte,
+ EcsU8,
+ EcsU16,
+ EcsU32,
+ EcsU64,
+ EcsI8,
+ EcsI16,
+ EcsI32,
+ EcsI64,
+ EcsF32,
+ EcsF64,
+ EcsUPtr,
+ EcsIPtr,
+ EcsString,
+ EcsEntity,
+ EcsId,
+ EcsPrimitiveKindLast = EcsId
+} ecs_primitive_kind_t;
+
+typedef struct ecs_primitive_desc_t {
+ ecs_entity_t entity; 
+ ecs_primitive_kind_t kind;
+} ecs_primitive_desc_t;
+
+// ----------------------------------------------------------------------------
+
+typedef unsigned long int __uint64_t;
+typedef __uint64_t uint64_t;
+typedef uint64_t ecs_id_t;
+typedef ecs_id_t ecs_entity_t;
+
+typedef enum ecs_primitive_kind_t {
+ EcsBool = 1,
+ EcsChar,
+ EcsByte,
+ EcsU8,
+ EcsU16,
+ EcsU32,
+ EcsU64,
+ EcsI8,
+ EcsI16,
+ EcsI32,
+ EcsI64,
+ EcsF32,
+ EcsF64,
+ EcsUPtr,
+ EcsIPtr,
+ EcsString,
+ EcsEntity,
+ EcsId,
+ EcsPrimitiveKindLast = EcsId
+} ecs_primitive_kind_t;
+
+typedef struct ecs_primitive_desc_t {
+ ecs_entity_t entity; 
+ ecs_primitive_kind_t kind;
+} ecs_primitive_desc_t;
+
+`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestIssue34c(t *testing.T) {
+	cfg := defaultCfg()
+	_, err := Translate(cfg, []Source{
+		{Name: "<predefined>", Value: cfg.Predefined},
+		{Name: "<builtin>", Value: Builtin},
+		{Name: "bug.c", Value: `
+
+typedef struct ecs_world_t ecs_world_t;
+typedef unsigned long int __uint64_t;
+typedef __uint64_t uint64_t;
+typedef uint64_t ecs_id_t;
+typedef ecs_id_t ecs_entity_t;
+typedef struct ecs_serializer_t {
+ 
+ int (*value)(
+ const struct ecs_serializer_t *ser, 
+ ecs_entity_t type, 
+ const void *value); 
+
+ 
+ int (*member)(
+ const struct ecs_serializer_t *ser, 
+ const char *member); 
+
+ const ecs_world_t *world;
+ void *ctx;
+} ecs_serializer_t;
+
+// ----------------------------------------------------------------------------
+
+typedef struct ecs_world_t ecs_world_t;
+typedef unsigned long int __uint64_t;
+typedef __uint64_t uint64_t;
+typedef uint64_t ecs_id_t;
+typedef ecs_id_t ecs_entity_t;
+typedef struct ecs_serializer_t {
+ 
+ int (*value)(
+ const struct ecs_serializer_t *ser, 
+ ecs_entity_t type, 
+ const void *value); 
+
+ 
+ int (*member)(
+ const struct ecs_serializer_t *ser, 
+ const char *member); 
+
+ const ecs_world_t *world;
+ void *ctx;
+} ecs_serializer_t;
+
+`},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

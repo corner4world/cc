@@ -2904,9 +2904,9 @@ func (p *parser) pointer(opt bool) (r *Pointer) {
 		p.cpp.eh("%v: unexpected EOF", p.toks[0].Position())
 		return nil
 	case '*':
-		r = &Pointer{Case: PointerTypeQual, Token: p.shift(false), TypeQualifiers: p.typeQualifierList(true, true)}
+		r = &Pointer{Case: PointerTypeQual, Token: p.shift(false), TypeQualifiers: p.typeQualifierList(true, true), lexicalScope: (*lexicalScope)(p.scope)}
 	case '^':
-		return &Pointer{Case: PointerBlock, Token: p.shift(false), TypeQualifiers: p.typeQualifierList(true, true)}
+		return &Pointer{Case: PointerBlock, Token: p.shift(false), TypeQualifiers: p.typeQualifierList(true, true), lexicalScope: (*lexicalScope)(p.scope)}
 	default:
 		if opt {
 			return nil
