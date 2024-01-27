@@ -4869,6 +4869,25 @@ func isName(n Node) string {
 	}
 }
 
+func normalizedMacroReplacementList(m *Macro) (r []Token) {
+	for _, v := range m.ReplacementList() {
+		switch v.Ch {
+		case ' ', '\n', '\t', '\r', '\f':
+			// nop
+		default:
+			r = append(r, v)
+		}
+	}
+	for len(r) != 0 && r[0].Ch == '(' && r[len(r)-1].Ch == ')' {
+		r = r[1 : len(r)-1]
+	}
+	if len(r) == 1 {
+		return r
+	}
+
+	return nil
+}
+
 // PrimaryExpression:
 //
 //	IDENTIFIER                 // Case PrimaryExpressionIdent
@@ -4896,8 +4915,23 @@ func (n *PrimaryExpression) check(c *ctx, mode flags) (r Type) {
 		}
 
 		if n.m != nil && n.m.Value() == Unknown && n.Value() != Unknown {
-			n.m.val = n.val
-			n.m.typ = n.typ
+			ok := true
+			if l := normalizedMacroReplacementList(n.m); len(l) == 1 {
+				switch l[0].Ch {
+				case rune(PPNUMBER):
+					switch n.val.(type) {
+					case StringValue, UTF16StringValue, UTF32StringValue, nil:
+						ok = false
+					}
+				}
+			}
+			switch {
+			case ok:
+				n.m.val = n.val
+				n.m.typ = n.typ
+			default:
+				n.m = nil
+			}
 		}
 		n.typ = c.decay(r, mode)
 		r = n.Type()
