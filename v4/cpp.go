@@ -18,8 +18,10 @@ import (
 )
 
 const (
-	maxIncludeLevel = 200 // gcc, std is at least 15.
-	maxCppEvalDepth = 100
+	maxIncludeLevel        = 200 // gcc, std is at least 15.
+	maxCppEvalDepth        = 100
+	maxCppExpandDepth      = 100
+	maxCppEvalExpandBudget = 100
 )
 
 var (
@@ -736,6 +738,8 @@ type cpp struct {
 
 	counter      int // __COUNTER__
 	evalDepth    int
+	expandBudget int
+	expandDepth  int
 	includeLevel int
 
 	closed bool
@@ -755,13 +759,14 @@ func newCPP(cfg *Config, fset *fset, sources []Source, eh errHandler) (*cpp, err
 		m[v.Name] = struct{}{}
 	}
 	c := &cpp{
-		cfg:     cfg,
-		eh:      eh,
-		fset:    fset,
-		groups:  map[string]group{},
-		macros:  map[string]*Macro{},
-		mstack:  map[string][]*Macro{},
-		sources: sources,
+		cfg:          cfg,
+		eh:           eh,
+		expandBudget: -1,
+		fset:         fset,
+		groups:       map[string]group{},
+		macros:       map[string]*Macro{},
+		mstack:       map[string][]*Macro{},
+		sources:      sources,
 	}
 	c.tokenizer = newTokenizer(c)
 	c.tok.Ch = eof // Invalidate
@@ -801,6 +806,15 @@ func (c *cpp) undent() string {
 
 // [1], pg 1.
 func (c *cpp) expand(outer, eval bool, TS tokenSequence, w *cppTokens) {
+	if c.expandDepth >= maxCppExpandDepth {
+		c.eh("%v: preprocessor expand recursion limit reached", TS.peek(0).Position())
+		return
+	}
+
+	c.expandDepth++
+
+	defer func() { c.expandDepth-- }()
+
 	// trc("* %s%v outer %v (%v)", c.indent(), toksDump(TS), outer, origin(2))
 	// defer func() { trc("->%s%v (%v)", c.undent(), toksDump(w), origin(2)) }()
 more:
@@ -810,6 +824,15 @@ more:
 		// if TS is {} then
 		//	return {};
 		if outer {
+			if c.expandBudget > 0 {
+				trc("c.expandBudget=%v", c.expandBudget)
+			}
+			if c.expandBudget--; c.expandBudget == 0 {
+				trc("exhausted")
+				c.eh("%v: preprocessor expand budget exhausted", t.Position())
+				return
+			}
+
 			*w = append(*w, t)
 		}
 		return
@@ -866,8 +889,8 @@ more:
 				args, rparen, ok := c.parseMacroArgs(TS)
 				// trc("args=%s rparen=%#U %q ok=%v", toksDump(args), rparen.Ch, rparen.SrcStr(), ok)
 				if !ok {
-					panic(todo(""))
-					// return r
+					c.eh("%v: error parsing macro arguments", t2.Position())
+					return
 				}
 
 				if len(args) > m.MinArgs && m.VarArg < 0 {
@@ -894,6 +917,15 @@ more:
 ret:
 	// note TS must be T HS • TS’
 	// return T HS • expand(TS’);
+	if c.expandBudget > 0 {
+		trc("c.expandBudget=%v", c.expandBudget)
+	}
+	if c.expandBudget--; c.expandBudget == 0 {
+		trc("exhausted")
+		c.eh("%v: preprocessor expand budget exhausted", t.Position())
+		return
+	}
+
 	*w = append(*w, t)
 	if !outer {
 		goto more
@@ -906,6 +938,15 @@ func (c *cpp) subst(eval bool, m *Macro, IS cppTokens, FP []string, AP []cppToke
 	// defer func() { trc("->%s%v", c.undent(), toksDump(r)) }()
 	var expandedArgs map[int]cppTokens
 more:
+	if c.expandBudget > 0 {
+		trc("c.expandBudget=%v len(OS)=%v", c.expandBudget, len(OS))
+	}
+	if c.expandBudget > 0 && c.expandBudget-len(OS) <= 0 {
+		trc("exhausted")
+		c.eh("%v: preprocessor expand budget exhausted", OS[len(OS)-1].Position())
+		return c.hsAdd(HS, OS)
+	}
+
 	// trc("  %[2]s%v %v", c.undent(), c.indent(), &t, toksDump(IS))
 	if len(IS) == 0 {
 		// if IS is {} then
@@ -1432,7 +1473,8 @@ out:
 		case '\n':
 			continue
 		case eof:
-			panic(todo("", &t))
+			c.eh("%v: EOF", t.Position())
+			return args, rparen, false
 		default:
 			arg = append(arg, t)
 		}
@@ -1943,7 +1985,7 @@ func (c *cpp) expression(s *cppTokens, eval bool) interface{} {
 	}
 
 	if c.evalDepth >= maxCppEvalDepth {
-		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		c.eh("%v: preprocessor evaluator recursion limit reached", (*s)[0].Position())
 		return nil
 	}
 
@@ -1984,7 +2026,7 @@ func (c *cpp) conditionalExpression(s *cppTokens, eval bool) interface{} {
 	}
 
 	if c.evalDepth >= maxCppEvalDepth {
-		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		c.eh("%v: preprocessor evaluator recursion limit reached", (*s)[0].Position())
 		return nil
 	}
 
@@ -2592,7 +2634,7 @@ func (c *cpp) unaryExpression(s *cppTokens, eval bool) interface{} {
 	}
 
 	if c.evalDepth >= maxCppEvalDepth {
-		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		c.eh("%v: preprocessor evaluator recursion limit reached", (*s)[0].Position())
 		return nil
 	}
 

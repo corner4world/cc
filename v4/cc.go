@@ -743,8 +743,9 @@ func Translate(cfg *Config, sources []Source) (*AST, error) {
 	}
 
 	cpp.eh = func(msg string, args ...interface{}) {}
+	cpp.expandBudget = maxCppEvalExpandBudget
 	for _, v := range cpp.macros {
-		if l := v.ReplacementList(); v.IsConst && len(l) != 0 && v.Value() == nil || v.Value() == Unknown {
+		if l := v.ReplacementList(); !v.IsFnLike && v.IsConst && len(l) != 0 && v.Value() == nil || v.Value() == Unknown {
 			switch x := cpp.eval(l).(type) {
 			case nil:
 				// nop
