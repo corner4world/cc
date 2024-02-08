@@ -716,24 +716,52 @@ func preprocess(cpp *cpp, w io.Writer) (err error) {
 // Config.Predefined and cc.Builtin are not used by default, the caller is
 // responsible for manually inserting them in sources.
 func Parse(cfg *Config, sources []Source) (*AST, error) {
+	_, ast, err := parse(cfg, sources)
+	return ast, err
+}
+
+func parse(cfg *Config, sources []Source) (*cpp, *AST, error) {
 	p, err := newParser(cfg, newFset(), sources)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return p.parse()
+	ast, err := p.parse()
+	return p.cpp, ast, err
 }
 
 // Translate preprocesses, parses and type checks a translation unit,
 // consisting of inputs in sources.
 func Translate(cfg *Config, sources []Source) (*AST, error) {
-	ast, err := Parse(cfg, sources)
+	cpp, ast, err := parse(cfg, sources)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := ast.check(cfg); err != nil {
 		return nil, err
+	}
+
+	cpp.eh = func(msg string, args ...interface{}) {}
+	for _, v := range cpp.macros {
+		if l := v.ReplacementList(); v.IsConst && len(l) != 0 && v.Value() == nil || v.Value() == Unknown {
+			switch x := cpp.eval(l).(type) {
+			case nil:
+				// nop
+			case int32:
+				v.val = Int64Value(x)
+			case int64:
+				v.val = Int64Value(x)
+			case uint32:
+				v.val = UInt64Value(x)
+			case uint64:
+				v.val = UInt64Value(x)
+			case string:
+				v.val = StringValue(x)
+				// default:
+				// 	trc("%v: %q %T(%[3]v)", v.Position(), v.Name.Src(), x) //TODO-DBG
+			}
+		}
 	}
 
 	return ast, nil

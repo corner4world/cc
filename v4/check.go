@@ -4914,7 +4914,7 @@ func (n *PrimaryExpression) check(c *ctx, mode flags) (r Type) {
 			return
 		}
 
-		if n.m != nil && n.m.Value() == Unknown && n.Value() != Unknown {
+		if n.m != nil && n.m.Value() == Unknown {
 			ok := true
 			if l := normalizedMacroReplacementList(n.m); len(l) == 1 {
 				switch l[0].Ch {

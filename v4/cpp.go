@@ -19,6 +19,7 @@ import (
 
 const (
 	maxIncludeLevel = 200 // gcc, std is at least 15.
+	maxCppEvalDepth = 100
 )
 
 var (
@@ -734,6 +735,7 @@ type cpp struct {
 	tos         interface{}
 
 	counter      int // __COUNTER__
+	evalDepth    int
 	includeLevel int
 
 	closed bool
@@ -1909,7 +1911,12 @@ func (c *cpp) eval(s0 []Token) interface{} {
 	c.expand(false, true, &s1, p)
 	p.skipBlank()
 	if len(*p) == 0 {
-		c.eh("%v: expected expression", s0[0])
+		switch {
+		case len(s0) == 0:
+			c.eh("internal error")
+		default:
+			c.eh("%v: expected expression", s0[0].Position())
+		}
 		return int64(0)
 	}
 
@@ -1931,6 +1938,19 @@ func (c *cpp) eval(s0 []Token) interface{} {
 //		assignment-expression
 //		expression , assignment-expression
 func (c *cpp) expression(s *cppTokens, eval bool) interface{} {
+	if len(*s) == 0 {
+		return nil
+	}
+
+	if c.evalDepth >= maxCppEvalDepth {
+		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		return nil
+	}
+
+	c.evalDepth++
+
+	defer func() { c.evalDepth-- }()
+
 	for {
 		r := c.assignmentExpression(s, eval)
 		if s.rune() != ',' {
@@ -1959,6 +1979,19 @@ func (c *cpp) assignmentExpression(s *cppTokens, eval bool) interface{} {
 //			logical-OR-expression
 //			logical-OR-expression ? expression : conditional-expression
 func (c *cpp) conditionalExpression(s *cppTokens, eval bool) interface{} {
+	if len(*s) == 0 {
+		return nil
+	}
+
+	if c.evalDepth >= maxCppEvalDepth {
+		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		return nil
+	}
+
+	c.evalDepth++
+
+	defer func() { c.evalDepth-- }()
+
 	expr := c.logicalOrExpression(s, eval)
 	if s.rune() == '?' {
 		s.shift()
@@ -2554,6 +2587,19 @@ func (c *cpp) multiplicativeExpression(s *cppTokens, eval bool) interface{} {
 //	 unary-operator: one of
 //			+ - ~ !
 func (c *cpp) unaryExpression(s *cppTokens, eval bool) interface{} {
+	if len(*s) == 0 {
+		return nil
+	}
+
+	if c.evalDepth >= maxCppEvalDepth {
+		c.eh("%v: preprocessor evaluator stack limit reached", (*s)[0].Position())
+		return nil
+	}
+
+	c.evalDepth++
+
+	defer func() { c.evalDepth-- }()
+
 	switch s.token().Ch {
 	case '+':
 		s.shift()
@@ -2693,7 +2739,7 @@ func (c *cpp) primaryExpression(s *cppTokens, eval bool) interface{} {
 		if s.rune() == ')' {
 			s.shift()
 		} else {
-			panic(todo(""))
+			c.eh("%v: unbalanced parenthesis", t.Position())
 		}
 		return expr
 	case '#':
