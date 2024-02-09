@@ -2692,10 +2692,10 @@ func (c *cpp) primaryExpression(s *cppTokens, eval bool) interface{} {
 		expr := c.expression(s, eval)
 		if s.rune() == ')' {
 			s.shift()
-		} else {
-			panic(todo(""))
+			return expr
 		}
-		return expr
+
+		c.eh("%v: unabalanced parenthesis", t.Position())
 	case '#':
 		c.eh("%v: assertions are a deprecated extension", t.Position())
 	default:
